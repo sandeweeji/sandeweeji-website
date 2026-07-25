@@ -1,3 +1,11 @@
+import React from "react";
+
+const page = () => {
+  return <div></div>;
+};
+
+export default page;
+
 // 'use client'
 // import { useState } from 'react'
 // import { motion, AnimatePresence } from 'framer-motion'
