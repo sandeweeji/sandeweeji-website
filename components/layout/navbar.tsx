@@ -225,7 +225,7 @@ export default function Navbar() {
                   );
                 })}
               </nav>
-              {/* <div className="p-6 border-t border-white/10 flex items-center gap-3">
+              <div className="p-6 border-t border-white/10 flex items-center gap-3">
                 <Button
                   variant="outline"
                   size="sm"
@@ -235,7 +235,7 @@ export default function Navbar() {
                   <Globe className="w-4 h-4 mr-2" />
                   {locale === "en" ? "عربي" : "English"}
                 </Button>
-                <Link href="/profile" className="flex-1">
+                {/* <Link href="/profile" className="flex-1">
                   <Button
                     variant="outline"
                     size="sm"
@@ -244,8 +244,8 @@ export default function Navbar() {
                     <User className="w-4 h-4 mr-2" />
                     {t("profile", locale)}
                   </Button>
-                </Link>
-              </div> */}
+                </Link> */}
+              </div>
             </motion.div>
           </>
         )}
