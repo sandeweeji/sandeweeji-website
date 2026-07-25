@@ -1,32 +1,57 @@
-'use client'
-import Image from 'next/image'
-import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { Leaf, Zap, Star, ChefHat, ArrowRight, MessageCircle } from 'lucide-react'
-import { useLocaleStore } from '@/lib/locale-store'
-import { t } from '@/lib/i18n'
-import { RESTAURANT_SETTINGS } from '@/lib/data'
+"use client";
+import Image from "next/image";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import {
+  Leaf,
+  Zap,
+  Star,
+  ChefHat,
+  ArrowRight,
+  MessageCircle,
+} from "lucide-react";
+import { useLocaleStore } from "@/lib/locale-store";
+import { t } from "@/lib/i18n";
+import { RESTAURANT_SETTINGS } from "@/lib/data";
 
 const PILLARS = [
-  { icon: Leaf,    titleKey: 'freshDaily',   descKey: 'freshDailyDesc',   emoji: '🌿' },
-  { icon: Zap,     titleKey: 'fastDelivery', descKey: 'fastDeliveryDesc', emoji: '⚡' },
-  { icon: Star,    titleKey: 'qualityFirst', descKey: 'qualityFirstDesc', emoji: '⭐' },
-  { icon: ChefHat, titleKey: 'ourStory',     descKey: 'ourStory',         emoji: '👨‍🍳' },
-] as const
+  {
+    icon: Leaf,
+    titleKey: "freshDaily",
+    descKey: "freshDailyDesc",
+    emoji: "🌿",
+  },
+  {
+    icon: Zap,
+    titleKey: "fastDelivery",
+    descKey: "fastDeliveryDesc",
+    emoji: "⚡",
+  },
+  {
+    icon: Star,
+    titleKey: "qualityFirst",
+    descKey: "qualityFirstDesc",
+    emoji: "⭐",
+  },
+  { icon: ChefHat, titleKey: "ourStory", descKey: "ourStory", emoji: "👨‍🍳" },
+] as const;
 
 export default function AboutPage() {
-  const { locale } = useLocaleStore()
-  const isRtl = locale === 'ar'
-  const phone = RESTAURANT_SETTINGS.whatsappNumber.replace(/[^0-9]/g, '')
-  const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent("Hello Sandweeji! 👋")}`
+  const { locale } = useLocaleStore();
+  const isRtl = locale === "ar";
+  const phone = RESTAURANT_SETTINGS.whatsappNumber.replace(/[^0-9]/g, "");
+  const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent("Hello Sandweeji! 👋")}`;
 
   return (
-    <main className="min-h-screen bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
+    <main className="min-h-screen bg-background" dir={isRtl ? "rtl" : "ltr"}>
       {/* Hero */}
       <section className="relative pt-32 pb-20 overflow-hidden">
         <div
           className="absolute inset-0 opacity-20 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse at 30% 40%, oklch(0.75 0.18 52 / 0.3) 0%, transparent 60%)' }}
+          style={{
+            background:
+              "radial-gradient(ellipse at 30% 40%, oklch(0.75 0.18 52 / 0.3) 0%, transparent 60%)",
+          }}
         />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
           <motion.div
@@ -35,7 +60,7 @@ export default function AboutPage() {
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-primary/25 text-primary text-sm font-semibold"
           >
             <ChefHat className="w-4 h-4" />
-            {isRtl ? 'من نحن' : 'About Us'}
+            {isRtl ? "من نحن" : "About Us"}
           </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
@@ -43,7 +68,7 @@ export default function AboutPage() {
             transition={{ delay: 0.1 }}
             className="text-5xl sm:text-6xl font-extrabold text-foreground text-balance"
           >
-            {isRtl ? 'قصة ساندويجي' : 'The Sandweeji Story'}
+            {isRtl ? "قصة ساندويجي" : "The Sandweeji Story"}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -52,8 +77,8 @@ export default function AboutPage() {
             className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed"
           >
             {isRtl
-              ? 'ولدنا في أبي سمرا، طرابلس، من شغف حقيقي بالطعام الجيد. هدفنا بسيط: تقديم أفضل برغر وشاورما في لبنان.'
-              : 'Born in Abi Samra, Tripoli, from a real passion for great food. Our goal is simple: serve the best burgers and shawarma in Lebanon.'}
+              ? "ولدنا في أبي سمرا، طرابلس، من شغف حقيقي بالطعام الجيد. هدفنا بسيط: تقديم أفضل برغر وشاورما في لبنان."
+              : "Born in Abi Samra, Tripoli, from a real passion for great food. Our goal is simple: serve the best burgers and shawarma in Lebanon."}
           </motion.p>
         </div>
       </section>
@@ -76,7 +101,7 @@ export default function AboutPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
           <div className="absolute bottom-8 left-8">
             <span className="text-4xl font-extrabold text-white text-shadow">
-              {isRtl ? 'ساندويجي | طرابلس' : 'Sandweeji | Tripoli'}
+              {isRtl ? "ساندويجي | طرابلس" : "Sandweeji | Tripoli"}
             </span>
           </div>
         </motion.div>
@@ -91,16 +116,18 @@ export default function AboutPage() {
             viewport={{ once: true }}
             className="space-y-5"
           >
-            <h2 className="text-4xl font-extrabold text-foreground">{t('ourStory', locale)}</h2>
+            <h2 className="text-4xl font-extrabold text-foreground">
+              {t("ourStory", locale)}
+            </h2>
             <p className="text-muted-foreground leading-relaxed">
               {isRtl
-                ? 'بدأت رحلة ساندويجي بحلم بسيط: تقديم طعام شارع أصيل بمعايير فاخرة. في قلب طرابلس، أسسنا مكاناً يجمع بين الطعم الأصيل والتجربة العصرية.'
-                : 'Sandweeji started with a simple dream: serve authentic street food with premium standards. In the heart of Tripoli, we created a place that blends authentic flavor with a modern experience.'}
+                ? "بدأت رحلة ساندويجي بحلم بسيط: تقديم طعام أصيل بمعايير فاخرة. في قلب طرابلس، أسسنا مكاناً يجمع بين الطعم الأصيل والتجربة العصرية."
+                : "Sandweeji started with a simple dream: serve authentic food with premium standards. In the heart of Tripoli, we created a place that blends authentic flavor with a modern experience."}
             </p>
             <p className="text-muted-foreground leading-relaxed">
               {isRtl
-                ? 'كل مكون نختاره بعناية، كل وصفة طُورت بشغف، كل طلب يُعد بحب. هذا ليس مجرد طعام، هذا تجربة تجعلك تعود مرة بعد مرة.'
-                : 'Every ingredient is carefully chosen, every recipe crafted with passion, every order prepared with love. This is not just food — it\'s an experience that brings you back again and again.'}
+                ? "كل مكون نختاره بعناية، كل وصفة طُورت بشغف، كل طلب يُعد بحب. هذا ليس مجرد طعام، هذا تجربة تجعلك تعود مرة بعد مرة."
+                : "Every ingredient is carefully chosen, every recipe crafted with passion, every order prepared with love. This is not just food — it's an experience that brings you back again and again."}
             </p>
           </motion.div>
           <motion.div
@@ -129,13 +156,28 @@ export default function AboutPage() {
             viewport={{ once: true }}
             className="text-4xl font-extrabold text-foreground text-center mb-12"
           >
-            {t('whyUs', locale)}
+            {t("whyUs", locale)}
           </motion.h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { icon: Leaf,  title: t('freshDaily', locale),   desc: t('freshDailyDesc', locale),   emoji: '🌿' },
-              { icon: Zap,   title: t('fastDelivery', locale), desc: t('fastDeliveryDesc', locale), emoji: '⚡' },
-              { icon: Star,  title: t('qualityFirst', locale), desc: t('qualityFirstDesc', locale), emoji: '⭐' },
+              {
+                icon: Leaf,
+                title: t("freshDaily", locale),
+                desc: t("freshDailyDesc", locale),
+                emoji: "🌿",
+              },
+              {
+                icon: Zap,
+                title: t("fastDelivery", locale),
+                desc: t("fastDeliveryDesc", locale),
+                emoji: "⚡",
+              },
+              {
+                icon: Star,
+                title: t("qualityFirst", locale),
+                desc: t("qualityFirstDesc", locale),
+                emoji: "⭐",
+              },
             ].map(({ icon: Icon, title, desc, emoji }, i) => (
               <motion.div
                 key={i}
@@ -147,7 +189,9 @@ export default function AboutPage() {
               >
                 <div className="text-4xl">{emoji}</div>
                 <h3 className="text-lg font-bold text-foreground">{title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {desc}
+                </p>
               </motion.div>
             ))}
           </div>
@@ -163,10 +207,12 @@ export default function AboutPage() {
           className="space-y-6"
         >
           <h2 className="text-4xl font-extrabold text-foreground">
-            {isRtl ? 'جرب الفرق بنفسك' : 'Experience the Difference'}
+            {isRtl ? "جرب الفرق بنفسك" : "Experience the Difference"}
           </h2>
           <p className="text-muted-foreground">
-            {isRtl ? 'اطلب الآن وتذوق ما يجعل ساندويجي مميزاً' : 'Order now and taste what makes Sandweeji special'}
+            {isRtl
+              ? "اطلب الآن وتذوق ما يجعل ساندويجي مميزاً"
+              : "Order now and taste what makes Sandweeji special"}
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/menu">
@@ -175,8 +221,10 @@ export default function AboutPage() {
                 whileTap={{ scale: 0.96 }}
                 className="flex items-center gap-2 px-8 py-4 rounded-2xl bg-primary text-primary-foreground font-bold glow-brand"
               >
-                {t('viewMenu', locale)}
-                <ArrowRight className={`w-4 h-4 ${isRtl ? 'rotate-180' : ''}`} />
+                {t("viewMenu", locale)}
+                <ArrowRight
+                  className={`w-4 h-4 ${isRtl ? "rotate-180" : ""}`}
+                />
               </motion.button>
             </Link>
             <motion.a
@@ -188,11 +236,11 @@ export default function AboutPage() {
               className="flex items-center gap-2 px-8 py-4 rounded-2xl bg-[#25D366]/15 border border-[#25D366]/30 text-[#25D366] font-bold"
             >
               <MessageCircle className="w-4 h-4" />
-              {t('orderWhatsApp', locale)}
+              {t("orderWhatsApp", locale)}
             </motion.a>
           </div>
         </motion.div>
       </section>
     </main>
-  )
+  );
 }

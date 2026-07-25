@@ -45,11 +45,11 @@ export default function Footer() {
                 </p>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
+            {/* <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
               {isRtl
                 ? "أفضل برغر وشاورما ودجاج مقرمش في طرابلس. طعام الشارع بتجربة فاخرة."
                 : "Best burgers, shawarma & crispy chicken in Tripoli. Street food with a premium experience."}
-            </p>
+            </p> */}
             <div className="flex gap-3">
               {[
                 {

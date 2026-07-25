@@ -15,7 +15,7 @@ export const translations = {
     orderWhatsApp: "Order on WhatsApp",
 
     // Hero
-    heroTagline: "Street Food. Premium Experience.",
+    heroTagline: "Premium Experience.",
     heroTitle: "Taste the\nDifference",
     heroSubtitle:
       "Handcrafted burgers, shawarma & more in the heart of Tripoli.",
@@ -121,8 +121,8 @@ export const translations = {
     orderWhatsApp: "اطلب عبر واتساب",
 
     // Hero
-    heroTagline: "طعام الشارع. تجربة فاخرة.",
-    heroTitle: "ذوق\nالفرق",
+    heroTagline: "تجربة فاخرة",
+    heroTitle: "سمينا سندويجي\n ترجع تيجي",
     heroSubtitle: "برغر وشاورما وأكثر في قلب طرابلس.",
     exploreMenu: "استكشف القائمة",
 
@@ -210,7 +210,7 @@ export const translations = {
     // Footer
     followUs: "تابعنا",
     rights: "جميع الحقوق محفوظة.",
-    madeWith: "صُنع بحب في طرابلس",
+    madeWith: "من تطوير يوسف مريم",
   },
 } as const;
 
