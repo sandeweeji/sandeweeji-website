@@ -225,7 +225,7 @@ export default function Navbar() {
                   );
                 })}
               </nav>
-              <div className="p-6 border-t border-white/10 flex items-center gap-3">
+              {/* <div className="p-6 border-t border-white/10 flex items-center gap-3">
                 <Button
                   variant="outline"
                   size="sm"
@@ -245,7 +245,7 @@ export default function Navbar() {
                     {t("profile", locale)}
                   </Button>
                 </Link>
-              </div>
+              </div> */}
             </motion.div>
           </>
         )}
