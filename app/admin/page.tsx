@@ -15,6 +15,8 @@ import {
   EyeOff,
   Eye,
   LayoutGrid,
+  Download,
+  Loader2,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -79,6 +81,9 @@ export default function AdminPage() {
   const [deleteErrorMessage, setDeleteErrorMessage] = useState<string | null>(
     null,
   );
+
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   /* ------------------------------------------------------------------------ */
   /* Products query                                                           */
@@ -330,6 +335,37 @@ export default function AdminPage() {
     deleteCategoryMutation.mutate(categoryPendingDelete.id);
   };
 
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    setExportError(null);
+
+    try {
+      const response = await fetch("/api/products/export");
+
+      if (!response.ok) {
+        throw new Error("تعذر تصدير الملف.");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `menu-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setExportError(
+        error instanceof Error ? error.message : "تعذر تصدير الملف.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const isSaving =
     saveProductMutation.isPending ||
     deleteProductMutation.isPending ||
@@ -390,7 +426,7 @@ export default function AdminPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-2 mb-5 border-b border-white/5">
+        <div className="flex items-center gap-2 mb-5 border-b border-white/10">
           <TabButton
             active={activeTab === "products"}
             onClick={() => setActiveTab("products")}
@@ -464,6 +500,20 @@ export default function AdminPage() {
 
                 <button
                   type="button"
+                  onClick={handleExportExcel}
+                  disabled={isExporting || products.length === 0}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-card border border-white/10 text-foreground text-sm font-bold hover:border-primary/40 hover:text-primary transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isExporting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  تصدير Excel
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleAddProduct}
                   disabled={isSaving}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -473,12 +523,18 @@ export default function AdminPage() {
                 </button>
               </div>
 
+              {exportError && (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+                  {exportError}
+                </div>
+              )}
+
               {/* Products table */}
-              <div className="bg-card border border-white/5 rounded-2xl overflow-hidden">
+              <div className="bg-card border border-white/10 rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-white/5">
+                      <tr className="border-b border-white/10">
                         <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
                           المنتج
                         </th>
@@ -534,7 +590,7 @@ export default function AdminPage() {
                                       {product.nameAr}
                                     </p>
                                     {product.badges.length > 0 && (
-                                      <p className="text-[10px] text-muted-foreground truncate">
+                                      <p className="text-xs text-muted-foreground truncate">
                                         {product.badges.length} شارة
                                       </p>
                                     )}
@@ -651,7 +707,7 @@ export default function AdminPage() {
                   Array.from({ length: 3 }).map((_, index) => (
                     <div
                       key={`cat-loading-${index}`}
-                      className="h-24 bg-card border border-white/5 rounded-2xl animate-pulse"
+                      className="h-24 bg-card border border-white/10 rounded-2xl animate-pulse"
                     />
                   ))}
 
@@ -659,7 +715,7 @@ export default function AdminPage() {
                   sortedCategories.map((category) => (
                     <div
                       key={category.id}
-                      className="bg-card border border-white/5 rounded-2xl p-4 flex items-center gap-3"
+                      className="bg-card border border-white/10 rounded-2xl p-4 flex items-center gap-3"
                     >
                       <div className="w-12 h-12 rounded-xl bg-surface border border-white/10 flex items-center justify-center text-2xl shrink-0">
                         {category.emoji}
@@ -802,7 +858,7 @@ function StatCard({
         : "text-primary";
 
   return (
-    <div className="bg-card border border-white/5 rounded-2xl p-4 flex items-center gap-3">
+    <div className="bg-card border border-white/10 rounded-2xl p-4 flex items-center gap-3">
       <div
         className={`w-9 h-9 rounded-lg bg-surface border border-white/10 flex items-center justify-center shrink-0 ${toneCls}`}
       >
@@ -812,9 +868,7 @@ function StatCard({
         <p className="text-lg font-extrabold text-foreground leading-none">
           {value}
         </p>
-        <p className="text-[11px] text-muted-foreground mt-1 truncate">
-          {label}
-        </p>
+        <p className="text-xs text-muted-foreground mt-1 truncate">{label}</p>
       </div>
     </div>
   );

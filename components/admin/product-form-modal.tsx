@@ -2,7 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Trash2, Loader2, AlertTriangle, ImageOff } from "lucide-react";
+import {
+  X,
+  Plus,
+  Trash2,
+  Loader2,
+  AlertTriangle,
+  ImageOff,
+  Upload,
+  Link as LinkIcon,
+} from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { Product, Category, ExtraType, Badge } from "@/lib/types";
 
@@ -126,8 +135,12 @@ export default function ProductFormModal({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [imageBroken, setImageBroken] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showManualUrl, setShowManualUrl] = useState(false);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* ------------------------------ Reset ---------------------------------- */
 
@@ -202,6 +215,42 @@ export default function ProductFormModal({
       ...prev,
       extras: prev.extras.filter((row) => row.key !== key),
     }));
+  };
+
+  /* --------------------------- Image upload -------------------------------- */
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    setUploadError(null);
+
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: uploadFormData,
+      });
+
+      const json = await response.json();
+
+      if (!response.ok) {
+        throw new Error(json.message || "تعذر رفع الصورة.");
+      }
+
+      update("image", json.data.url as string);
+      setImageBroken(false);
+    } catch (error) {
+      setUploadError(
+        error instanceof Error ? error.message : "تعذر رفع الصورة.",
+      );
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   /* ------------------------------ Validation -------------------------------- */
@@ -329,7 +378,7 @@ export default function ProductFormModal({
             className="fixed z-50 inset-x-4 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-auto sm:w-full sm:max-w-xl max-h-[92vh] overflow-y-auto bg-card border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl scrollbar-hide"
           >
             {/* Header */}
-            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 bg-card/95 backdrop-blur-sm border-b border-white/5">
+            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 bg-card/95 backdrop-blur-sm border-b border-white/10">
               <div>
                 <h2 className="text-lg font-extrabold text-foreground">
                   {isEditMode ? "تعديل المنتج" : "إضافة منتج جديد"}
@@ -374,7 +423,7 @@ export default function ProductFormModal({
                   placeholder="اكتب وصف المنتج..."
                   className="bg-surface border-white/10 text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 resize-none rounded-xl text-sm"
                 />
-                <p className="text-[11px] text-muted-foreground/60 text-left">
+                <p className="text-xs text-muted-foreground text-left">
                   {form.descriptionAr.length} حرف
                 </p>
               </Field>
@@ -383,7 +432,7 @@ export default function ProductFormModal({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Field label="التصنيف" error={errors.categoryId}>
                   {categories.length === 0 ? (
-                    <p className="text-xs text-muted-foreground/70 italic px-1">
+                    <p className="text-xs text-muted-foreground italic px-1">
                       أضف تصنيفًا أولاً.
                     </p>
                   ) : (
@@ -430,9 +479,22 @@ export default function ProductFormModal({
               </div>
 
               {/* Image */}
-              <Field label="رابط الصورة" error={errors.image}>
+              <Field label="صورة المنتج" error={errors.image}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+
                 <div className="flex items-center gap-3">
-                  <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-surface border border-white/10 shrink-0 flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingImage}
+                    className="relative w-20 h-20 rounded-xl overflow-hidden bg-surface border border-white/10 shrink-0 flex items-center justify-center group disabled:opacity-70"
+                  >
                     {form.image && !imageBroken ? (
                       <img
                         src={form.image}
@@ -442,10 +504,50 @@ export default function ProductFormModal({
                         onLoad={() => setImageBroken(false)}
                       />
                     ) : (
-                      <ImageOff className="w-5 h-5 text-muted-foreground/50" />
+                      <ImageOff className="w-5 h-5 text-muted-foreground" />
                     )}
-                  </div>
 
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      {isUploadingImage ? (
+                        <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      ) : (
+                        <Upload className="w-5 h-5 text-white" />
+                      )}
+                    </div>
+                  </button>
+
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingImage}
+                      className="w-full h-11 flex items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 text-sm font-semibold text-foreground hover:border-primary/50 hover:text-primary transition-colors disabled:opacity-60"
+                    >
+                      {isUploadingImage ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          جارٍ الرفع...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          {form.image ? "استبدال الصورة" : "رفع صورة"}
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowManualUrl((prev) => !prev)}
+                      className="flex items-center gap-1.5 text-xs text-foreground/70 hover:text-primary transition-colors"
+                    >
+                      <LinkIcon className="w-3 h-3" />
+                      {showManualUrl ? "إخفاء إدخال الرابط" : "أو أدخل رابط الصورة يدويًا"}
+                    </button>
+                  </div>
+                </div>
+
+                {showManualUrl && (
                   <input
                     dir="ltr"
                     value={form.image}
@@ -454,10 +556,15 @@ export default function ProductFormModal({
                       setImageBroken(false);
                     }}
                     placeholder="https://..."
-                    className={inputCls(errors.image) + " flex-1"}
+                    className={inputCls(errors.image) + " mt-2"}
                   />
-                </div>
-                {form.image && imageBroken && (
+                )}
+
+                {uploadError && (
+                  <p className="text-xs text-destructive">{uploadError}</p>
+                )}
+
+                {form.image && imageBroken && !isUploadingImage && (
                   <p className="text-xs text-amber-400">
                     تعذر تحميل الصورة من هذا الرابط.
                   </p>
@@ -634,7 +741,7 @@ function ExtrasGroup({
       </div>
 
       {rows.length === 0 && (
-        <p className="text-xs text-muted-foreground/70 italic">
+        <p className="text-xs text-muted-foreground italic">
           {type === "ADD"
             ? "لا توجد إضافات لهذا المنتج."
             : "لا توجد مكونات قابلة للإزالة."}

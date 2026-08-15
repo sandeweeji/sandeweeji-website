@@ -143,7 +143,7 @@ export default function CategoryFormModal({
             dir="rtl"
             className="fixed z-50 inset-x-4 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-auto sm:w-full sm:max-w-md max-h-[92vh] overflow-y-auto bg-card border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl scrollbar-hide"
           >
-            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 bg-card/95 backdrop-blur-sm border-b border-white/5">
+            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 bg-card/95 backdrop-blur-sm border-b border-white/10">
               <h2 className="text-lg font-extrabold text-foreground">
                 {isEditMode ? "تعديل التصنيف" : "إضافة تصنيف جديد"}
               </h2>
