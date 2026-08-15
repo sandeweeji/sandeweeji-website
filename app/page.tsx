@@ -1,8 +1,8 @@
-'use client'
-import HeroSection from '@/components/landing/hero-section'
-import FeaturedSection from '@/components/landing/featured-section'
-import ReviewsSection from '@/components/landing/reviews-section'
-import CtaSection from '@/components/landing/cta-section'
+"use client";
+import HeroSection from "@/components/landing/hero-section";
+import FeaturedSection from "@/components/landing/featured-section";
+import ReviewsSection from "@/components/landing/reviews-section";
+import CtaSection from "@/components/landing/cta-section";
 
 export default function HomePage() {
   return (
@@ -10,7 +10,7 @@ export default function HomePage() {
       <HeroSection />
       <FeaturedSection />
       <ReviewsSection />
-      <CtaSection />
+      {/* <CtaSection /> */}
     </main>
-  )
+  );
 }

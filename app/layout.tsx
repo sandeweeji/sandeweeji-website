@@ -6,6 +6,7 @@ import Navbar from "@/components/layout/navbar";
 import Footer from "@/components/layout/footer";
 import CartDrawer from "@/components/cart/cart-drawer";
 import LocaleHtmlWrapper from "@/components/layout/locale-html-wrapper";
+import QueryProvider from "@/components/providers/query-provider";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -58,8 +59,9 @@ export default function RootLayout({
       <body className="antialiased font-sans bg-background text-foreground">
         <LocaleHtmlWrapper />
         <Navbar />
-        {children}
-        <Footer />
+        <QueryProvider>{children}</QueryProvider>
+        <Analytics />
+        {/* <Footer /> */}
         <CartDrawer />
         {process.env.NODE_ENV === "production" && <Analytics />}
       </body>

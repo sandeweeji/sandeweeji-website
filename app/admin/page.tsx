@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -14,51 +14,146 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
-import { PRODUCTS, CATEGORIES } from "@/lib/data";
+import { useMutation, useQuery } from "@tanstack/react-query";
+
+import { axiosDelete, axiosGet, axiosPost, axiosPut } from "@/lib/axios";
+
 import { formatPrice } from "@/lib/utils";
-import type { Product, Category } from "@/lib/types";
+
+import type { Product, Category, Badge } from "@/lib/types";
 
 import ProductFormModal, {
   type ProductFormPayload,
 } from "@/components/admin/product-form-modal";
 
+/* -------------------------------------------------------------------------- */
+/* API response types                                                         */
+/* -------------------------------------------------------------------------- */
+
+interface ProductsResponse {
+  products?: Product[];
+}
+
+interface CategoriesResponse {
+  categories?: Category[];
+}
+
+/*
+ * إذا كان الـ API يرجع array مباشرة:
+ *
+ * data: Product[]
+ *
+ * بدلاً من:
+ *
+ * data: { products: Product[] }
+ *
+ * الكود تحت يتعامل مع الحالتين.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Component                                                                  */
+/* -------------------------------------------------------------------------- */
+
 export default function AdminPage() {
   const [productSearch, setProductSearch] = useState("");
-
-  const [products, setProducts] = useState<Product[]>(PRODUCTS as Product[]);
-
-  const [categories] = useState<Category[]>(CATEGORIES as Category[]);
-
-  const [availabilityMap, setAvailabilityMap] = useState<
-    Record<string, boolean>
-  >(
-    Object.fromEntries(
-      products.map((product) => [product.id, product.available]),
-    ),
-  );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  /* ------------------------------------------------------------------
-   * Search
-   * ---------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------ */
+  /* Products query                                                           */
+  /* ------------------------------------------------------------------------ */
 
-  const filteredProducts = products.filter((product) => {
-    const search = productSearch.toLowerCase();
+  const {
+    data: productsResponse,
+    isLoading: productsLoading,
+    isError: productsError,
+    refetch: refetchProducts,
+  } = useQuery({
+    queryKey: ["products"],
+    queryFn: async () => {
+      const response = await axiosGet<Product[] | ProductsResponse>("products");
 
-    return (
-      product.nameAr.toLowerCase().includes(search) ||
-      // Future English support:
-      // product.nameEn?.toLowerCase().includes(search) ||
-      false
-    );
+      if (!response.data) {
+        throw new Error(response.message || "Failed to fetch products");
+      }
+
+      return response.data;
+    },
   });
 
-  /* ------------------------------------------------------------------
-   * Open modal
-   * ---------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------ */
+  /* Categories query                                                         */
+  /* ------------------------------------------------------------------------ */
+
+  const {
+    data: categoriesResponse,
+    isLoading: categoriesLoading,
+    isError: categoriesError,
+  } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const response = await axiosGet<Category[] | CategoriesResponse>(
+        "categories",
+      );
+
+      return response.data;
+    },
+  });
+
+  /* ------------------------------------------------------------------------ */
+  /* Normalize API data                                                       */
+  /* ------------------------------------------------------------------------ */
+
+  const products: Product[] = Array.isArray(productsResponse)
+    ? productsResponse
+    : (productsResponse?.products ?? []);
+
+  const categories: Category[] = Array.isArray(categoriesResponse)
+    ? categoriesResponse
+    : (categoriesResponse?.categories ?? []);
+
+  /* ------------------------------------------------------------------------ */
+  /* Loading                                                                  */
+  /* ------------------------------------------------------------------------ */
+
+  const isLoading = productsLoading || categoriesLoading;
+
+  /* ------------------------------------------------------------------------ */
+  /* Error                                                                    */
+  /* ------------------------------------------------------------------------ */
+
+  const isError = productsError || categoriesError;
+
+  /* ------------------------------------------------------------------------ */
+  /* Search                                                                   */
+  /* ------------------------------------------------------------------------ */
+
+  const filteredProducts = useMemo(() => {
+    const search = productSearch.trim().toLowerCase();
+
+    if (!search) {
+      return products;
+    }
+
+    return products.filter((product) => {
+      return product.nameAr.toLowerCase().includes(search);
+
+      /*
+       * Future English support:
+       *
+       * ||
+       * product.nameEn
+       *   ?.toLowerCase()
+       *   .includes(search)
+       */
+    });
+  }, [products, productSearch]);
+
+  /* ------------------------------------------------------------------------ */
+  /* Open modal                                                               */
+  /* ------------------------------------------------------------------------ */
 
   const handleAddProduct = () => {
     setSelectedProduct(null);
@@ -75,184 +170,145 @@ export default function AdminPage() {
     setSelectedProduct(null);
   };
 
-  /* ------------------------------------------------------------------
-   * Availability
-   *
-   * Local only for now because you don't have API routes yet.
-   * ---------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------ */
+  /* CREATE / UPDATE mutation                                                 */
+  /* ------------------------------------------------------------------------ */
 
-  const toggleAvailability = (id: string) => {
-    setAvailabilityMap((prev) => {
-      const nextAvailable = !prev[id];
+  const saveProductMutation = useMutation({
+    mutationFn: async (payload: ProductFormPayload) => {
+      /*
+       * CREATE
+       */
+      if (!payload.id) {
+        return axiosPost<ProductFormPayload, Product>("products", payload);
+      }
 
-      return {
-        ...prev,
-        [id]: nextAvailable,
-      };
-    });
+      /*
+       * UPDATE
+       */
+      return axiosPut<ProductFormPayload, Product>(
+        `products/${payload.id}`,
+        payload,
+      );
+    },
 
-    setProducts((prev) =>
-      prev.map((product) =>
-        product.id === id
-          ? {
-              ...product,
-              available: !product.available,
-            }
-          : product,
-      ),
-    );
-  };
+    onSuccess: async () => {
+      /*
+       * No queryClient.
+       *
+       * We simply refetch the useQuery.
+       */
+      await refetchProducts();
 
-  /* ------------------------------------------------------------------
-   * Save
-   *
-   * No API route yet.
-   *
-   * This only updates the local state so you can test the complete UI.
-   * Later replace this function with your server/API/database logic.
-   * ---------------------------------------------------------------- */
+      handleCloseModal();
+    },
+  });
+
+  /* ------------------------------------------------------------------------ */
+  /* DELETE mutation                                                          */
+  /* ------------------------------------------------------------------------ */
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      return axiosDelete<Product>(`products/${productId}`);
+    },
+
+    onSuccess: async () => {
+      await refetchProducts();
+
+      handleCloseModal();
+    },
+  });
+
+  /* ------------------------------------------------------------------------ */
+  /* Availability mutation                                                    */
+  /* ------------------------------------------------------------------------ */
+
+  const toggleAvailabilityMutation = useMutation({
+    mutationFn: async ({
+      id,
+      available,
+    }: {
+      id: string;
+      available: boolean;
+    }) => {
+      /*
+       * Only update the availability field.
+       *
+       * Your PUT /products/[id] route should accept
+       * partial product updates.
+       */
+      return axiosPut<{ available: boolean }, Product>(`products/${id}`, {
+        available,
+      });
+    },
+
+    onSuccess: async () => {
+      await refetchProducts();
+    },
+  });
+
+  /* ------------------------------------------------------------------------ */
+  /* Save handler                                                             */
+  /* ------------------------------------------------------------------------ */
 
   const handleSaveProduct = async (
     payload: ProductFormPayload,
   ): Promise<void> => {
-    if (payload.id) {
-      // ---------------------------------------------------------------
-      // EDIT
-      // ---------------------------------------------------------------
+    await saveProductMutation.mutateAsync(payload);
+  };
 
-      setProducts((prev) =>
-        prev.map((product) => {
-          if (product.id !== payload.id) return product;
+  /* ------------------------------------------------------------------------ */
+  /* Delete handler                                                           */
+  /* ------------------------------------------------------------------------ */
 
-          return {
-            ...product,
+  const handleDeleteProduct = async (productId: string): Promise<void> => {
+    await deleteProductMutation.mutateAsync(productId);
+  };
 
-            categoryId: payload.categoryId,
-            nameAr: payload.nameAr,
+  /* ------------------------------------------------------------------------ */
+  /* Availability handler                                                     */
+  /* ------------------------------------------------------------------------ */
 
-            // Future English support:
-            // nameEn: payload.nameEn,
-
-            descriptionAr: payload.descriptionAr,
-
-            // Future English support:
-            // descriptionEn: payload.descriptionEn,
-
-            price: payload.price,
-            image: payload.image,
-            calories: payload.calories,
-            badges: payload.badges as Product["badges"],
-            available: payload.available,
-
-            extras: payload.extras.map((extra) => ({
-              id: extra.id ?? crypto.randomUUID(),
-              productId: product.id,
-              type: extra.type,
-              nameAr: extra.nameAr,
-
-              // Future English support:
-              // nameEn: extra.nameEn,
-
-              price: extra.price,
-              sortOrder: 0,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            })),
-          };
-        }),
-      );
-
-      setAvailabilityMap((prev) => ({
-        ...prev,
-        [payload.id!]: payload.available,
-      }));
-
+  const toggleAvailability = (product: Product) => {
+    if (toggleAvailabilityMutation.isPending) {
       return;
     }
 
-    // ---------------------------------------------------------------
-    // CREATE
-    // ---------------------------------------------------------------
-
-    const newProductId = crypto.randomUUID();
-
-    const newProduct: Product = {
-      id: newProductId,
-
-      categoryId: payload.categoryId,
-
-      nameAr: payload.nameAr,
-
-      // Future English support:
-      // nameEn: payload.nameEn,
-
-      descriptionAr: payload.descriptionAr,
-
-      // Future English support:
-      // descriptionEn: payload.descriptionEn,
-
-      price: payload.price,
-      image: payload.image,
-      calories: payload.calories,
-      badges: payload.badges as Product["badges"],
-      available: payload.available,
-
-      sortOrder: products.length,
-
-      extras: payload.extras.map((extra) => ({
-        id: extra.id ?? crypto.randomUUID(),
-        productId: newProductId,
-        type: extra.type,
-        nameAr: extra.nameAr,
-
-        // Future English support:
-        // nameEn: extra.nameEn,
-
-        price: extra.price,
-        sortOrder: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })),
-
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    setProducts((prev) => [...prev, newProduct]);
-
-    setAvailabilityMap((prev) => ({
-      ...prev,
-      [newProductId]: newProduct.available,
-    }));
-  };
-
-  /* ------------------------------------------------------------------
-   * Delete
-   *
-   * Local only for now.
-   * ---------------------------------------------------------------- */
-
-  const handleDeleteProduct = async (productId: string): Promise<void> => {
-    setProducts((prev) => prev.filter((product) => product.id !== productId));
-
-    setAvailabilityMap((prev) => {
-      const next = { ...prev };
-      delete next[productId];
-      return next;
+    toggleAvailabilityMutation.mutate({
+      id: product.id,
+      available: !product.available,
     });
   };
+
+  /* ------------------------------------------------------------------------ */
+  /* Combined mutation state                                                  */
+  /* ------------------------------------------------------------------------ */
+
+  const isSaving =
+    saveProductMutation.isPending || deleteProductMutation.isPending;
+
+  /* ------------------------------------------------------------------------ */
+  /* Render                                                                   */
+  /* ------------------------------------------------------------------------ */
 
   return (
     <main className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20">
-        {/* ------------------------------------------------------------
-         * Header
-         * ---------------------------------------------------------- */}
+        {/* ------------------------------------------------------------------ */}
+        {/* Header                                                             */}
+        {/* ------------------------------------------------------------------ */}
 
         <div className="flex items-center justify-between mb-8">
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{
+              opacity: 0,
+              y: 16,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
           >
             <div className="flex items-center gap-3 mb-1">
               <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center">
@@ -265,13 +321,17 @@ export default function AdminPage() {
             </div>
 
             <h1 className="text-3xl font-extrabold text-foreground">
-              Menu Management
+              إدارة القائمة
             </h1>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{
+              opacity: 0,
+            }}
+            animate={{
+              opacity: 1,
+            }}
             className="flex items-center gap-3"
           >
             <div className="relative">
@@ -289,9 +349,9 @@ export default function AdminPage() {
           </motion.div>
         </div>
 
-        {/* ------------------------------------------------------------
-         * Menu
-         * ---------------------------------------------------------- */}
+        {/* ------------------------------------------------------------------ */}
+        {/* Menu                                                               */}
+        {/* ------------------------------------------------------------------ */}
 
         <div className="space-y-5">
           {/* Search + Add */}
@@ -304,7 +364,7 @@ export default function AdminPage() {
                 type="search"
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
-                placeholder="Search products..."
+                placeholder="ابحث عن منتج..."
                 className="w-full h-11 bg-card border border-white/10 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 pl-11 pr-4 focus:outline-none focus:border-primary/50 transition-colors"
               />
             </div>
@@ -312,155 +372,200 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={handleAddProduct}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors flex-shrink-0"
+              disabled={isSaving}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="w-4 h-4" />
-              Add Item
+              إضافة منتج
             </button>
           </div>
 
-          {/* ----------------------------------------------------------
-           * Products table
-           * -------------------------------------------------------- */}
+          {/* ---------------------------------------------------------------- */}
+          {/* Error                                                            */}
+          {/* ---------------------------------------------------------------- */}
+
+          {isError && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3">
+              <p className="text-sm text-destructive">
+                حدث خطأ أثناء تحميل البيانات.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => refetchProducts()}
+                className="mt-2 text-sm font-semibold text-destructive underline"
+              >
+                إعادة المحاولة
+              </button>
+            </div>
+          )}
+
+          {/* ---------------------------------------------------------------- */}
+          {/* Products table                                                   */}
+          {/* ---------------------------------------------------------------- */}
 
           <div className="bg-card border border-white/5 rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-white/5">
-                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
-                      Product
+                    <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
+                      المنتج
                     </th>
 
-                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5 hidden sm:table-cell">
-                      Category
+                    <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5 hidden sm:table-cell">
+                      التصنيف
                     </th>
 
-                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
-                      Price
+                    <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
+                      السعر
                     </th>
 
-                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
-                      Available
+                    <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
+                      متاح
                     </th>
 
-                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
-                      Actions
+                    <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
+                      الإجراءات
                     </th>
                   </tr>
                 </thead>
 
                 <tbody className="divide-y divide-white/5">
-                  {filteredProducts.map((product) => {
-                    const category = categories.find(
-                      (c) => c.id === product.categoryId,
-                    );
+                  {/* Loading */}
 
-                    const available =
-                      availabilityMap[product.id] ?? product.available;
-
-                    return (
-                      <tr
-                        key={product.id}
-                        className="hover:bg-white/2 transition-colors group"
-                      >
-                        {/* Product */}
-
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-3">
-                            <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-surface flex-shrink-0">
-                              <Image
-                                src={product.image}
-                                alt={product.nameAr}
-                                fill
-                                className="object-cover"
-                                sizes="40px"
-                              />
-                            </div>
-
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-foreground truncate">
-                                {product.nameAr}
-                              </p>
-
-                              {/* Future English support:
-                              <p className="text-xs text-muted-foreground truncate hidden md:block">
-                                {product.nameEn}
-                              </p>
-                              */}
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Category */}
-
-                        <td className="px-5 py-3.5 hidden sm:table-cell">
-                          <span className="text-sm text-muted-foreground">
-                            {category
-                              ? `${category.emoji} ${category.nameAr}`
-                              : "—"}
-                          </span>
-                        </td>
-
-                        {/* Price */}
-
-                        <td className="px-5 py-3.5">
-                          <span className="text-sm font-bold text-primary">
-                            {formatPrice(product.price)}
-                          </span>
-                        </td>
-
-                        {/* Availability */}
-
-                        <td className="px-5 py-3.5">
-                          <button
-                            type="button"
-                            onClick={() => toggleAvailability(product.id)}
-                            className="transition-colors"
-                            aria-label={
-                              available ? "Mark unavailable" : "Mark available"
-                            }
-                          >
-                            {available ? (
-                              <ToggleRight className="w-6 h-6 text-emerald-400" />
-                            ) : (
-                              <ToggleLeft className="w-6 h-6 text-muted-foreground" />
-                            )}
-                          </button>
-                        </td>
-
-                        {/* Actions */}
-
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              type="button"
-                              onClick={() => handleEditProduct(product)}
-                              className="w-8 h-8 rounded-lg hover:bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-                              aria-label="Edit product"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleEditProduct(product)}
-                              className="w-8 h-8 rounded-lg hover:bg-destructive/10 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
-                              aria-label="Delete product"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                  {isLoading &&
+                    Array.from({ length: 5 }).map((_, index) => (
+                      <tr key={`loading-${index}`}>
+                        <td colSpan={5} className="px-5 py-4">
+                          <div className="h-10 bg-white/5 rounded-lg animate-pulse" />
                         </td>
                       </tr>
-                    );
-                  })}
+                    ))}
 
-                  {filteredProducts.length === 0 && (
+                  {/* Data */}
+
+                  {!isLoading &&
+                    filteredProducts.map((product) => {
+                      const category = categories.find(
+                        (c) => c.id === product.categoryId,
+                      );
+
+                      return (
+                        <tr
+                          key={product.id}
+                          className="hover:bg-white/2 transition-colors group"
+                        >
+                          {/* Product */}
+
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-surface shrink-0">
+                                <Image
+                                  src={product.image}
+                                  alt={product.nameAr}
+                                  fill
+                                  className="object-cover"
+                                  sizes="40px"
+                                />
+                              </div>
+
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-foreground truncate">
+                                  {product.nameAr}
+                                </p>
+
+                                {/*
+                                  Future English support:
+
+                                  <p className="text-xs text-muted-foreground truncate hidden md:block">
+                                    {product.nameEn}
+                                  </p>
+                                */}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Category */}
+
+                          <td className="px-5 py-3.5 hidden sm:table-cell">
+                            <span className="text-sm text-muted-foreground">
+                              {category
+                                ? `${category.emoji} ${category.nameAr}`
+                                : "—"}
+                            </span>
+                          </td>
+
+                          {/* Price */}
+
+                          <td className="px-5 py-3.5">
+                            <span className="text-sm font-bold text-primary">
+                              {formatPrice(product.price)}
+                            </span>
+                          </td>
+
+                          {/* Availability */}
+
+                          <td className="px-5 py-3.5">
+                            <button
+                              type="button"
+                              onClick={() => toggleAvailability(product)}
+                              disabled={toggleAvailabilityMutation.isPending}
+                              className="transition-colors disabled:opacity-50"
+                              aria-label={
+                                product.available
+                                  ? "إخفاء المنتج"
+                                  : "إظهار المنتج"
+                              }
+                            >
+                              {product.available ? (
+                                <ToggleRight className="w-6 h-6 text-emerald-400" />
+                              ) : (
+                                <ToggleLeft className="w-6 h-6 text-muted-foreground" />
+                              )}
+                            </button>
+                          </td>
+
+                          {/* Actions */}
+
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                              {/* Edit */}
+
+                              <button
+                                type="button"
+                                onClick={() => handleEditProduct(product)}
+                                disabled={isSaving}
+                                className="w-8 h-8 rounded-lg hover:bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                                aria-label="تعديل"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+
+                              {/* Delete */}
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteProduct(product.id)}
+                                disabled={isSaving}
+                                className="w-8 h-8 rounded-lg hover:bg-destructive/10 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                                aria-label="حذف"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                  {/* Empty */}
+
+                  {!isLoading && !isError && filteredProducts.length === 0 && (
                     <tr>
                       <td colSpan={5} className="px-5 py-12 text-center">
                         <p className="text-sm text-muted-foreground">
-                          No products found.
+                          لا توجد منتجات.
                         </p>
                       </td>
                     </tr>
@@ -472,9 +577,9 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* --------------------------------------------------------------
-       * Product Form Modal
-       * ------------------------------------------------------------ */}
+      {/* -------------------------------------------------------------------- */}
+      {/* Product Form Modal                                                   */}
+      {/* -------------------------------------------------------------------- */}
 
       <ProductFormModal
         isOpen={isModalOpen}
