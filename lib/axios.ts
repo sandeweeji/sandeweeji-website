@@ -1,71 +1,87 @@
-import { IResponse } from "@/interfaces/interfaces";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
-export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL + "/api/",
-  withCredentials: true,
+/* -------------------------------------------------------------------------- */
+/* NOTE: This is a reference file.                                           */
+/* You already have axiosGet / axiosPost / axiosPut / axiosDelete — only     */
+/* axiosPatch is new here (needed for the partial-update endpoints, e.g.     */
+/* toggling product availability without re-sending the whole product).      */
+/* Merge just that piece into your existing lib/axios.ts.                    */
+/* -------------------------------------------------------------------------- */
+
+const api = axios.create({
+  baseURL: "/api",
 });
 
-export const axiosGet = async <T>(path: string): Promise<IResponse<T>> => {
-  try {
-    const response = await api.get(path);
+interface ApiEnvelope<T> {
+  status: number;
+  message?: string;
+  data?: T;
+}
 
-    return response.data as IResponse<T>;
-  } catch (error: any) {
-    return {
-      status: error?.response?.status ?? 500,
-      message: error?.response?.data?.message ?? "حدث خطأ أثناء جلب البيانات.",
-      data: error?.response?.data?.data,
-    };
+function unwrapError(error: unknown): Error {
+  if (axios.isAxiosError(error)) {
+    const axiosError = error as AxiosError<ApiEnvelope<unknown>>;
+    const message = axiosError.response?.data?.message;
+
+    if (message) {
+      return new Error(message);
+    }
   }
-};
 
-export const axiosPost = async <TRequest, TResponse>(
+  return error instanceof Error ? error : new Error("حدث خطأ غير متوقع.");
+}
+
+export async function axiosGet<T>(path: string): Promise<ApiEnvelope<T>> {
+  try {
+    const response = await api.get<ApiEnvelope<T>>(`/${path}`);
+    return response.data;
+  } catch (error) {
+    throw unwrapError(error);
+  }
+}
+
+export async function axiosPost<Payload, T>(
   path: string,
-  dto: TRequest,
-): Promise<IResponse<TResponse>> => {
+  payload: Payload,
+): Promise<ApiEnvelope<T>> {
   try {
-    const response = await api.post(path, dto);
-
-    return response.data as IResponse<TResponse>;
-  } catch (error: any) {
-    return {
-      status: error?.response?.status ?? 500,
-      message:
-        error?.response?.data?.message ?? "حدث خطأ أثناء إضافة البيانات.",
-      data: error?.response?.data?.data,
-    };
+    const response = await api.post<ApiEnvelope<T>>(`/${path}`, payload);
+    return response.data;
+  } catch (error) {
+    throw unwrapError(error);
   }
-};
+}
 
-export const axiosPut = async <TRequest, TResponse>(
+export async function axiosPut<Payload, T>(
   path: string,
-  dto?: TRequest,
-): Promise<IResponse<TResponse>> => {
+  payload: Payload,
+): Promise<ApiEnvelope<T>> {
   try {
-    const response = await api.put(path, dto);
-
-    return response.data as IResponse<TResponse>;
-  } catch (error: any) {
-    return {
-      status: error?.response?.status ?? 500,
-      message:
-        error?.response?.data?.message ?? "حدث خطأ أثناء تعديل البيانات.",
-      data: error?.response?.data?.data,
-    };
+    const response = await api.put<ApiEnvelope<T>>(`/${path}`, payload);
+    return response.data;
+  } catch (error) {
+    throw unwrapError(error);
   }
-};
+}
 
-export const axiosDelete = async <T>(path: string): Promise<IResponse<T>> => {
+/** NEW — partial update. Use for things like toggling `available` alone. */
+export async function axiosPatch<Payload, T>(
+  path: string,
+  payload: Payload,
+): Promise<ApiEnvelope<T>> {
   try {
-    const response = await api.delete(path);
-
-    return response.data as IResponse<T>;
-  } catch (error: any) {
-    return {
-      status: error?.response?.status ?? 500,
-      message: error?.response?.data?.message ?? "حدث خطأ أثناء حذف البيانات.",
-      data: error?.response?.data?.data,
-    };
+    const response = await api.patch<ApiEnvelope<T>>(`/${path}`, payload);
+    return response.data;
+  } catch (error) {
+    throw unwrapError(error);
   }
-};
+}
+
+export async function axiosDelete<T>(path: string): Promise<ApiEnvelope<T>> {
+  try {
+    const response = await api.delete<ApiEnvelope<T>>(`/${path}`);
+    return response.data;
+  } catch (error) {
+    throw unwrapError(error);
+  }
+}

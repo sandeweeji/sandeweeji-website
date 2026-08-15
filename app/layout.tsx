@@ -60,10 +60,9 @@ export default function RootLayout({
         <LocaleHtmlWrapper />
         <Navbar />
         <QueryProvider>{children}</QueryProvider>
-        <Analytics />
         {/* <Footer /> */}
         <CartDrawer />
-        {process.env.NODE_ENV === "production" && <Analytics />}
+        {process.env.NODE_ENV === "production"}
       </body>
     </html>
   );

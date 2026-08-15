@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+/* -------------------------------------------------------------------------- */
+/* GET - Get all categories                                                   */
+/* -------------------------------------------------------------------------- */
+
 export async function GET() {
   try {
     const categories = await prisma.category.findMany({
-      orderBy: [
-        {
-          sortOrder: "asc",
+      include: {
+        _count: {
+          select: { products: true },
         },
-        {
-          createdAt: "desc",
-        },
-      ],
+      },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     });
 
     return NextResponse.json({
@@ -23,13 +25,64 @@ export async function GET() {
     console.error("GET /api/categories error:", error);
 
     return NextResponse.json(
-      {
-        status: 500,
-        message: "حدث خطأ أثناء جلب التصنيفات.",
+      { status: 500, message: "حدث خطأ أثناء جلب التصنيفات." },
+      { status: 500 },
+    );
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* POST - Create category                                                     */
+/* -------------------------------------------------------------------------- */
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { nameAr, nameEn, emoji, visible, sortOrder } = body;
+
+    if (!nameAr?.trim()) {
+      return NextResponse.json(
+        { status: 400, message: "اسم التصنيف مطلوب." },
+        { status: 400 },
+      );
+    }
+
+    if (!emoji?.trim()) {
+      return NextResponse.json(
+        { status: 400, message: "الرمز التعبيري للتصنيف مطلوب." },
+        { status: 400 },
+      );
+    }
+
+    const category = await prisma.category.create({
+      data: {
+        nameAr: nameAr.trim(),
+        nameEn: nameEn?.trim() || null,
+        emoji: emoji.trim(),
+        visible: visible ?? true,
+        sortOrder: sortOrder === undefined || sortOrder === null ? 0 : Number(sortOrder),
       },
-      {
-        status: 500,
+      include: {
+        _count: {
+          select: { products: true },
+        },
       },
+    });
+
+    return NextResponse.json(
+      {
+        status: 201,
+        message: "تمت إضافة التصنيف بنجاح.",
+        data: category,
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    console.error("POST /api/categories error:", error);
+
+    return NextResponse.json(
+      { status: 500, message: "حدث خطأ أثناء إضافة التصنيف." },
+      { status: 500 },
     );
   }
 }
