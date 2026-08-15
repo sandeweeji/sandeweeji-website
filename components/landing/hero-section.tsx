@@ -2,10 +2,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, MessageCircle, Star, Flame, Sparkles } from "lucide-react";
+import { ArrowRight, Star, Flame, Sparkles, Utensils } from "lucide-react";
 import { useLocaleStore } from "@/lib/locale-store";
 import { t } from "@/lib/i18n";
 import { RESTAURANT_SETTINGS } from "@/lib/data";
+import whatsapp from "@/public/whatsapp.png";
 
 export default function HeroSection() {
   const { locale } = useLocaleStore();
@@ -19,6 +20,7 @@ export default function HeroSection() {
       delay: 0,
       x: "-5%",
       y: "25%",
+      hideOnMobile: false,
     },
     {
       label: isAr ? "طازج يومياً" : "Fresh Daily",
@@ -27,6 +29,7 @@ export default function HeroSection() {
       delay: 0.4,
       x: "3%",
       y: "68%",
+      hideOnMobile: true,
     },
     {
       label: isAr ? "#1 في طرابلس" : "#1 in Tripoli",
@@ -35,6 +38,7 @@ export default function HeroSection() {
       delay: 0.8,
       x: "72%",
       y: "15%",
+      hideOnMobile: true,
     },
     {
       label: isAr ? "اطلب في 30 ثانية" : "Order in 30s",
@@ -43,15 +47,18 @@ export default function HeroSection() {
       delay: 0.6,
       x: "78%",
       y: "60%",
+      hideOnMobile: false,
     },
   ];
   const isRtl = isAr;
   const phone = RESTAURANT_SETTINGS.whatsappNumber.replace(/[^0-9]/g, "");
-  const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent("Hello Sandweeji! 👋\n\nI'd like to place an order.")}`;
+  const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(
+    "Hello Sandweeji! 👋\n\nI'd like to place an order.",
+  )}`;
 
   return (
     <section
-      className="relative min-h-screen flex items-center overflow-hidden bg-background"
+      className="relative overflow-hidden bg-background lg:min-h-screen lg:flex lg:items-center"
       dir={isRtl ? "rtl" : "ltr"}
     >
       {/* Background texture */}
@@ -71,21 +78,10 @@ export default function HeroSection() {
         />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 lg:pt-32 w-full">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-10 sm:pt-28 sm:pb-16 lg:pt-32 w-full">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-8 items-center">
           {/* Left — Copy */}
-          <div className="space-y-8 order-2 lg:order-1">
-            {/* Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass border border-primary/25 text-sm font-medium text-primary"
-            >
-              <Flame className="w-3.5 h-3.5" />
-              {t("heroTagline", locale)}
-            </motion.div>
-
+          <div className="space-y-5 sm:space-y-8 order-2 lg:order-1">
             {/* Headline */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -93,48 +89,43 @@ export default function HeroSection() {
               transition={{ delay: 0.2 }}
               className="space-y-2"
             >
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground leading-[0.9] tracking-tight text-balance">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground leading-[1.1] sm:leading-[1.05] tracking-tight text-balance">
                 {isRtl ? (
                   <>
-                    <span className="text-primary">سمينا سندويجي</span>
-                    <br />
-                    شان ترجع تيجي
+                    <span className="text-primary block sm:inline-block sm:ms-3">
+                      سمينا ساندويجي
+                    </span>
+                    <span className="block sm:inline-block">
+                      مشان ترجع تيجي
+                    </span>
                   </>
                 ) : (
                   <>
-                    Taste
+                    <span>Taste</span>
                     <br />
-                    <span className="text-primary">the Diff</span>
+                    <span className="text-primary me-2 sm:me-3">the Diff</span>
                     <span className="text-foreground">erence</span>
                   </>
                 )}
               </h1>
             </motion.div>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-lg text-muted-foreground leading-relaxed max-w-md"
-            >
-              {t("heroSubtitle", locale)}
-            </motion.p>
-
-            {/* CTAs */}
+            {/* CTAs — Side by side across mobile & desktop */}
+            {/* CTAs — Same size */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="flex flex-wrap gap-3"
+              className="grid grid-cols-2 sm:flex sm:flex-row sm:items-center gap-3 sm:gap-4 max-w-lg"
             >
-              <Link href="/menu">
+              <Link href="/menu" className="w-full sm:w-auto">
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  className="inline-flex items-center gap-2.5 px-7 py-4 rounded-2xl bg-primary text-primary-foreground font-bold text-base shadow-lg glow-brand hover:bg-primary/90 transition-all"
+                  className="w-full sm:w-[190px] h-[52px] sm:h-[56px] inline-flex items-center justify-center gap-2 sm:gap-2.5 px-4 sm:px-7 rounded-lg bg-primary text-primary-foreground font-bold text-sm sm:text-base shadow-lg glow-brand hover:bg-primary/90 transition-all whitespace-nowrap"
                 >
                   {t("viewMenu", locale)}
-                  <ArrowRight className="w-4 h-4" />
+                  <Utensils className="w-4 h-4 shrink-0" />
                 </motion.button>
               </Link>
 
@@ -144,48 +135,15 @@ export default function HeroSection() {
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="inline-flex items-center gap-2.5 px-7 py-4 rounded-2xl bg-[#25D366]/15 border border-[#25D366]/30 text-[#25D366] font-bold text-base hover:bg-[#25D366]/20 transition-all"
+                className="w-full sm:w-[190px] h-[52px] sm:h-[56px] inline-flex items-center justify-center gap-2 sm:gap-2.5 px-4 sm:px-7 rounded-lg bg-emerald-950 border border-[#25D366]/30 text-[#25D366] font-bold text-sm sm:text-base hover:bg-[#25D366]/20 transition-all whitespace-nowrap"
               >
-                <MessageCircle className="w-4 h-4" />
+                <Image
+                  src={whatsapp}
+                  alt="WhatsApp"
+                  className="w-5 h-5 sm:w-6 sm:h-6 shrink-0"
+                />
                 {t("orderWhatsApp", locale)}
               </motion.a>
-            </motion.div>
-
-            {/* Social proof */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="flex items-center gap-4"
-            >
-              <div className="flex -space-x-2">
-                {[
-                  "bg-amber-500",
-                  "bg-orange-500",
-                  "bg-red-500",
-                  "bg-yellow-500",
-                ].map((c, i) => (
-                  <div
-                    key={i}
-                    className={`w-8 h-8 rounded-full ${c} border-2 border-background flex items-center justify-center text-xs font-bold text-white`}
-                  >
-                    {["A", "S", "O", "L"][i]}
-                  </div>
-                ))}
-              </div>
-              <div>
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="w-3.5 h-3.5 fill-primary text-primary"
-                    />
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {isRtl ? "أكثر من 2000 زبون سعيد" : "2,000+ happy customers"}
-                </p>
-              </div>
             </motion.div>
           </div>
 
@@ -199,7 +157,7 @@ export default function HeroSection() {
                 duration: 0.6,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="relative w-full max-w-[520px] aspect-square"
+              className="relative w-full max-w-[260px] sm:max-w-[380px] lg:max-w-[520px] aspect-square mx-auto"
             >
               {/* Glow ring */}
               <div className="absolute inset-8 rounded-full bg-primary/10 blur-3xl" />
@@ -225,7 +183,7 @@ export default function HeroSection() {
                   fill
                   className="object-contain drop-shadow-2xl"
                   priority
-                  sizes="(max-width: 1024px) 80vw, 520px"
+                  sizes="(max-width: 640px) 260px, (max-width: 1024px) 380px, 520px"
                 />
               </motion.div>
 
@@ -241,14 +199,18 @@ export default function HeroSection() {
                     stiffness: 200,
                   }}
                   style={{ left: card.x, top: card.y, position: "absolute" }}
-                  className="glass border border-white/10 rounded-2xl px-3 py-2 flex items-center gap-2 shadow-xl z-20 whitespace-nowrap"
+                  className={`${
+                    card.hideOnMobile ? "hidden sm:flex" : "flex"
+                  } glass border border-white/10 rounded-xl sm:rounded-2xl px-2 py-1.5 sm:px-3 sm:py-2 items-center gap-1.5 sm:gap-2 shadow-xl z-20 whitespace-nowrap`}
                 >
-                  <span className="text-xl leading-none">{card.emoji}</span>
+                  <span className="text-sm sm:text-xl leading-none">
+                    {card.emoji}
+                  </span>
                   <div>
-                    <p className="text-xs font-bold text-foreground">
+                    <p className="text-[10px] sm:text-xs font-bold text-foreground">
                       {card.label}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="hidden sm:block text-[10px] text-muted-foreground">
                       {card.subLabel}
                     </p>
                   </div>
@@ -263,7 +225,7 @@ export default function HeroSection() {
                   repeat: Infinity,
                   ease: "easeInOut",
                 }}
-                className="absolute top-[12%] right-[18%] z-30"
+                className="hidden sm:block absolute top-[12%] right-[18%] z-30"
               >
                 <Sparkles className="w-5 h-5 text-primary/60" />
               </motion.div>
@@ -277,7 +239,7 @@ export default function HeroSection() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.2 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+        className="hidden lg:flex absolute bottom-8 left-1/2 -translate-x-1/2 flex-col items-center gap-2"
       >
         <motion.div
           animate={{ y: [0, 6, 0] }}

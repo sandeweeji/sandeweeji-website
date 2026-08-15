@@ -13,6 +13,7 @@ import {
 import { useLocaleStore } from "@/lib/locale-store";
 import { t } from "@/lib/i18n";
 import { RESTAURANT_SETTINGS } from "@/lib/data";
+import whatsapp from "@/public/whatsapp.png";
 
 const PILLARS = [
   {
@@ -237,7 +238,7 @@ export default function AboutPage() {
               whileTap={{ scale: 0.96 }}
               className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-[#25D366]/15 border border-[#25D366]/30 text-[#25D366] font-bold"
             >
-              <MessageCircle className="w-4 h-4" />
+              <Image src={whatsapp} alt="WhatsApp" className="w-6 h-6" />
               {t("orderWhatsApp", locale)}
             </motion.a>
           </div>
