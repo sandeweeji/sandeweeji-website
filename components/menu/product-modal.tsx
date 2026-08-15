@@ -1,9 +1,8 @@
 'use client'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Minus, ShoppingBag, Flame } from 'lucide-react'
-import { Dialog } from '@/components/ui/dialog'
+import { X, Plus, Minus, ShoppingBag, Flame, Ban } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { useCartStore } from '@/lib/cart-store'
 import { useLocaleStore } from '@/lib/locale-store'
@@ -33,22 +32,36 @@ export default function ProductModal({ product, onClose }: Props) {
   const [justAdded, setJustAdded] = useState(false)
   const isRtl = locale === 'ar'
 
+  // Paid add-ons vs free removable ingredients — these were previously
+  // rendered as one undifferentiated list, which meant "no onions" style
+  // options showed up with a price toggle they shouldn't have had.
+  const addOns = useMemo(
+    () => product?.extras?.filter(e => e.type === 'ADD') ?? [],
+    [product],
+  )
+  const removables = useMemo(
+    () => product?.extras?.filter(e => e.type === 'REMOVE') ?? [],
+    [product],
+  )
+
   if (!product) return null
 
-  const name = locale === 'ar' ? product.nameAr : product.nameEn
-  const desc = locale === 'ar' ? product.descriptionAr : product.descriptionEn
+  const name = locale === 'ar' ? product.nameAr : (product.nameEn ?? product.nameAr)
+  const desc = locale === 'ar' ? product.descriptionAr : (product.descriptionEn ?? product.descriptionAr)
   const extrasTotal = selectedExtras.reduce((s, e) => s + e.price, 0)
   const total = (product.price + extrasTotal) * qty
 
   const toggleExtra = (extra: NonNullable<typeof product.extras>[0]) => {
     setSelectedExtras(prev => {
       const exists = prev.find(e => e.id === extra.id)
-      return exists ? prev.filter(e => e.id !== extra.id) : [...prev, { id: extra.id, nameEn: extra.nameEn, nameAr: extra.nameAr, price: extra.price }]
+      return exists
+        ? prev.filter(e => e.id !== extra.id)
+        : [...prev, { id: extra.id, type: extra.type, nameEn: extra.nameEn, nameAr: extra.nameAr, price: extra.price }]
     })
   }
 
   const handleAdd = () => {
-    addItem({ productId: product.id, nameEn: product.nameEn, nameAr: product.nameAr, price: product.price, image: product.image, quantity: qty, notes, extras: selectedExtras })
+    addItem({ productId: product.id, nameEn: product.nameEn ?? product.nameAr, nameAr: product.nameAr, price: product.price, image: product.image, quantity: qty, notes, extras: selectedExtras })
     setJustAdded(true)
     setTimeout(() => { setJustAdded(false); onClose() }, 900)
   }
@@ -127,14 +140,14 @@ export default function ProductModal({ product, onClose }: Props) {
 
               <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
 
-              {/* Extras */}
-              {product.extras && product.extras.length > 0 && (
+              {/* Paid add-ons */}
+              {addOns.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-foreground">{t('extras', locale)}</h3>
                   <div className="grid grid-cols-1 gap-2">
-                    {product.extras.map(extra => {
+                    {addOns.map(extra => {
                       const selected = selectedExtras.some(e => e.id === extra.id)
-                      const extraName = locale === 'ar' ? extra.nameAr : extra.nameEn
+                      const extraName = locale === 'ar' ? extra.nameAr : (extra.nameEn ?? extra.nameAr)
                       return (
                         <motion.button
                           key={extra.id}
@@ -155,6 +168,36 @@ export default function ProductModal({ product, onClose }: Props) {
                           <span className={`font-semibold ${selected ? 'text-primary' : ''}`}>
                             +{formatPrice(extra.price)}
                           </span>
+                        </motion.button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Free removable ingredients */}
+              {removables.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {isRtl ? 'إزالة مكونات' : 'Remove ingredients'}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {removables.map(extra => {
+                      const selected = selectedExtras.some(e => e.id === extra.id)
+                      const extraName = locale === 'ar' ? extra.nameAr : (extra.nameEn ?? extra.nameAr)
+                      return (
+                        <motion.button
+                          key={extra.id}
+                          whileTap={{ scale: 0.96 }}
+                          onClick={() => toggleExtra(extra)}
+                          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                            selected
+                              ? 'border-red-500/40 bg-red-500/10 text-red-400'
+                              : 'border-white/10 bg-surface text-muted-foreground hover:border-red-500/30'
+                          }`}
+                        >
+                          <Ban className="w-3.5 h-3.5" />
+                          {isRtl ? `بدون ${extraName}` : `No ${extraName}`}
                         </motion.button>
                       )
                     })}

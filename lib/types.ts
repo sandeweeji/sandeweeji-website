@@ -41,6 +41,16 @@ export interface Extra {
   updatedAt: string;
 }
 
+/** Extra as selected inside the cart — carries `type` so REMOVE items can be
+ *  rendered/priced differently from paid ADD-ons. */
+export interface CartExtra {
+  id: string;
+  type: ExtraType;
+  nameEn: string | null;
+  nameAr: string;
+  price: number;
+}
+
 export interface Product {
   id: string;
   categoryId: string;

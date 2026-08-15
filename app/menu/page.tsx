@@ -1,15 +1,16 @@
 'use client'
-import { useState, useRef, useCallback, useMemo } from 'react'
+import { useRef, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal, ShoppingBag } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useLocaleStore } from '@/lib/locale-store'
 import { useCartStore } from '@/lib/cart-store'
 import { t } from '@/lib/i18n'
-import { PRODUCTS, CATEGORIES } from '@/lib/data'
-import { formatPrice, cn } from '@/lib/utils'
+import { axiosGet } from '@/lib/axios'
+import { cn } from '@/lib/utils'
 import ProductCard from '@/components/menu/product-card'
 import ProductModal from '@/components/menu/product-modal'
-import type { Product } from '@/lib/types'
+import type { Product, Category } from '@/lib/types'
 
 const SORT_OPTIONS = [
   { value: 'default',    labelEn: 'Default',        labelAr: 'الافتراضي' },
@@ -17,6 +18,9 @@ const SORT_OPTIONS = [
   { value: 'price-desc', labelEn: 'Price: High–Low', labelAr: 'السعر: الأعلى أولاً' },
   { value: 'popular',    labelEn: 'Popular First',   labelAr: 'الأكثر شعبية' },
 ]
+
+interface ProductsResponse { products?: Product[] }
+interface CategoriesResponse { categories?: Category[] }
 
 export default function MenuPage() {
   const { locale } = useLocaleStore()
@@ -31,25 +35,69 @@ export default function MenuPage() {
   const categoryRefs = useRef<Record<string, HTMLElement | null>>({})
   const navRef = useRef<HTMLDivElement>(null)
 
+  /* ---- Live data ---- */
+  const {
+    data: productsResponse,
+    isLoading: productsLoading,
+    isError: productsError,
+    refetch: refetchProducts,
+  } = useQuery({
+    queryKey: ['menu-products'],
+    queryFn: async () => {
+      const response = await axiosGet<Product[] | ProductsResponse>('products')
+      if (!response.data) throw new Error(response.message || 'Failed to fetch products')
+      return response.data
+    },
+  })
+
+  const {
+    data: categoriesResponse,
+    isLoading: categoriesLoading,
+    isError: categoriesError,
+    refetch: refetchCategories,
+  } = useQuery({
+    queryKey: ['menu-categories'],
+    queryFn: async () => {
+      const response = await axiosGet<Category[] | CategoriesResponse>('categories')
+      if (!response.data) throw new Error(response.message || 'Failed to fetch categories')
+      return response.data
+    },
+  })
+
+  const products: Product[] = Array.isArray(productsResponse)
+    ? productsResponse
+    : (productsResponse?.products ?? [])
+
+  const categories: Category[] = useMemo(() => {
+    const list: Category[] = Array.isArray(categoriesResponse)
+      ? categoriesResponse
+      : (categoriesResponse?.categories ?? [])
+    return [...list].sort((a, b) => a.sortOrder - b.sortOrder)
+  }, [categoriesResponse])
+
+  const isLoading = productsLoading || categoriesLoading
+  const isError = productsError || categoriesError
+
   /* ---- Filtered & sorted products ---- */
   const filtered = useMemo(() => {
-    let list = [...PRODUCTS]
+    let list = [...products]
     if (activeCategory !== 'all') {
       list = list.filter(p => p.categoryId === activeCategory)
     }
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter(p =>
-        p.nameEn.toLowerCase().includes(q) ||
+        p.nameEn?.toLowerCase().includes(q) ||
         p.nameAr.includes(q) ||
-        p.descriptionEn.toLowerCase().includes(q)
+        p.descriptionEn?.toLowerCase().includes(q) ||
+        p.descriptionAr.includes(q)
       )
     }
     if (sort === 'price-asc')  list.sort((a, b) => a.price - b.price)
     if (sort === 'price-desc') list.sort((a, b) => b.price - a.price)
     if (sort === 'popular')    list.sort((a, b) => (b.badges.includes('popular') ? 1 : 0) - (a.badges.includes('popular') ? 1 : 0))
     return list
-  }, [activeCategory, search, sort])
+  }, [products, activeCategory, search, sort])
 
   /* ---- Category click: scroll to section ---- */
   const handleCategoryClick = (catId: string) => {
@@ -62,11 +110,11 @@ export default function MenuPage() {
 
   const groupedByCategory = useMemo(() => {
     if (activeCategory !== 'all' || search || sort !== 'default') return null
-    return CATEGORIES.filter(c => c.visible).map(cat => ({
+    return categories.filter(c => c.visible).map(cat => ({
       category: cat,
-      products: PRODUCTS.filter(p => p.categoryId === cat.id && p.available),
+      products: products.filter(p => p.categoryId === cat.id && p.available),
     })).filter(g => g.products.length > 0)
-  }, [activeCategory, search, sort])
+  }, [categories, products, activeCategory, search, sort])
 
   return (
     <main className="min-h-screen bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -131,7 +179,7 @@ export default function MenuPage() {
       </div>
 
       {/* Sticky Category Nav */}
-      <div className="sticky top-16 lg:top-20 z-30 bg-background/90 backdrop-blur-md border-b border-white/5">
+      <div className="sticky top-16 lg:top-20 z-30 bg-background/90 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div ref={navRef} className="flex gap-2 overflow-x-auto scrollbar-hide py-3">
             {/* All */}
@@ -147,8 +195,8 @@ export default function MenuPage() {
             >
               {isRtl ? 'الكل' : 'All'}
             </motion.button>
-            {CATEGORIES.filter(c => c.visible).map(cat => {
-              const catName = locale === 'ar' ? cat.nameAr : cat.nameEn
+            {categories.filter(c => c.visible).map(cat => {
+              const catName = locale === 'ar' ? cat.nameAr : (cat.nameEn ?? cat.nameAr)
               return (
                 <motion.button
                   key={cat.id}
@@ -172,66 +220,110 @@ export default function MenuPage() {
 
       {/* Products */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-32 pt-8">
-        {/* Search / filtered flat list */}
-        {(search || activeCategory !== 'all' || sort !== 'default') && (
-          <div>
-            {filtered.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex flex-col items-center justify-center py-24 gap-4"
-              >
-                <span className="text-6xl">🔍</span>
-                <p className="text-lg font-semibold text-foreground">{t('noItems', locale)}</p>
-                <button
-                  onClick={() => { setSearch(''); setActiveCategory('all'); setSort('default') }}
-                  className="text-sm text-primary hover:underline"
-                >
-                  {t('clearSearch', locale)}
-                </button>
-              </motion.div>
-            ) : (
-              <motion.div
-                layout
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
-              >
-                <AnimatePresence mode="popLayout">
-                  {filtered.map(product => (
-                    <ProductCard key={product.id} product={product} onOpenModal={setModalProduct} />
-                  ))}
-                </AnimatePresence>
-              </motion.div>
-            )}
+        {/* Error */}
+        {isError && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3 mb-8">
+            <p className="text-sm text-destructive">
+              {isRtl ? 'حدث خطأ أثناء تحميل القائمة.' : 'Something went wrong loading the menu.'}
+            </p>
+            <button
+              onClick={() => { refetchProducts(); refetchCategories() }}
+              className="mt-2 text-sm font-semibold text-destructive underline"
+            >
+              {isRtl ? 'إعادة المحاولة' : 'Try again'}
+            </button>
           </div>
         )}
 
-        {/* Grouped by category (default view) */}
-        {groupedByCategory && (
-          <div className="space-y-16">
-            {groupedByCategory.map(({ category, products }) => {
-              const catName = locale === 'ar' ? category.nameAr : category.nameEn
-              return (
-                <section
-                  key={category.id}
-                  ref={el => { categoryRefs.current[category.id] = el }}
-                >
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="text-3xl">{category.emoji}</span>
-                    <h2 className="text-2xl font-extrabold text-foreground">{catName}</h2>
-                    <span className="text-sm text-muted-foreground">({products.length})</span>
-                  </div>
+        {/* Loading skeleton */}
+        {isLoading && !isError && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="bg-card border border-white/10 rounded-2xl overflow-hidden">
+                <div className="h-44 bg-surface animate-pulse" />
+                <div className="p-4 space-y-3">
+                  <div className="h-4 bg-surface rounded animate-pulse w-2/3" />
+                  <div className="h-3 bg-surface rounded animate-pulse w-full" />
+                  <div className="h-8 bg-surface rounded animate-pulse w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!isLoading && !isError && (
+          <>
+            {/* Search / filtered flat list */}
+            {(search || activeCategory !== 'all' || sort !== 'default') && (
+              <div>
+                {filtered.length === 0 ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex flex-col items-center justify-center py-24 gap-4"
+                  >
+                    <span className="text-6xl">🔍</span>
+                    <p className="text-lg font-semibold text-foreground">{t('noItems', locale)}</p>
+                    <button
+                      onClick={() => { setSearch(''); setActiveCategory('all'); setSort('default') }}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {t('clearSearch', locale)}
+                    </button>
+                  </motion.div>
+                ) : (
                   <motion.div
                     layout
                     className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
                   >
-                    {products.map(product => (
-                      <ProductCard key={product.id} product={product} onOpenModal={setModalProduct} />
-                    ))}
+                    <AnimatePresence mode="popLayout">
+                      {filtered.map(product => (
+                        <ProductCard key={product.id} product={product} onOpenModal={setModalProduct} />
+                      ))}
+                    </AnimatePresence>
                   </motion.div>
-                </section>
-              )
-            })}
-          </div>
+                )}
+              </div>
+            )}
+
+            {/* Grouped by category (default view) */}
+            {groupedByCategory && (
+              <div className="space-y-16">
+                {groupedByCategory.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-24 gap-4">
+                    <span className="text-6xl">🍽️</span>
+                    <p className="text-lg font-semibold text-foreground">
+                      {isRtl ? 'لا توجد منتجات متاحة حاليًا.' : 'No items available right now.'}
+                    </p>
+                  </div>
+                ) : (
+                  groupedByCategory.map(({ category, products: catProducts }) => {
+                    const catName = locale === 'ar' ? category.nameAr : (category.nameEn ?? category.nameAr)
+                    return (
+                      <section
+                        key={category.id}
+                        ref={el => { categoryRefs.current[category.id] = el }}
+                      >
+                        <div className="flex items-center gap-3 mb-6">
+                          <span className="text-3xl">{category.emoji}</span>
+                          <h2 className="text-2xl font-extrabold text-foreground">{catName}</h2>
+                          <span className="text-sm text-muted-foreground">({catProducts.length})</span>
+                        </div>
+                        <motion.div
+                          layout
+                          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+                        >
+                          {catProducts.map(product => (
+                            <ProductCard key={product.id} product={product} onOpenModal={setModalProduct} />
+                          ))}
+                        </motion.div>
+                      </section>
+                    )
+                  })
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 

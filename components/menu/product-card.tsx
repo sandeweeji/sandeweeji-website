@@ -2,7 +2,7 @@
 import Image from 'next/image'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Eye, Flame, Heart } from 'lucide-react'
+import { Plus, Eye, Heart } from 'lucide-react'
 import { useCartStore } from '@/lib/cart-store'
 import { useLocaleStore } from '@/lib/locale-store'
 import { t } from '@/lib/i18n'
@@ -30,8 +30,10 @@ export default function ProductCard({ product, onOpenModal }: Props) {
   const [liked, setLiked] = useState(false)
   const isRtl = locale === 'ar'
 
-  const name = locale === 'ar' ? product.nameAr : product.nameEn
-  const desc = locale === 'ar' ? product.descriptionAr : product.descriptionEn
+  // Fall back to Arabic when the English fields haven't been filled in yet
+  // (the admin product form currently only edits the Arabic fields).
+  const name = locale === 'ar' ? product.nameAr : (product.nameEn ?? product.nameAr)
+  const desc = locale === 'ar' ? product.descriptionAr : (product.descriptionEn ?? product.descriptionAr)
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -39,7 +41,7 @@ export default function ProductCard({ product, onOpenModal }: Props) {
       onOpenModal(product)
       return
     }
-    addItem({ productId: product.id, nameEn: product.nameEn, nameAr: product.nameAr, price: product.price, image: product.image, quantity: 1, extras: [] })
+    addItem({ productId: product.id, nameEn: product.nameEn ?? product.nameAr, nameAr: product.nameAr, price: product.price, image: product.image, quantity: 1, extras: [] })
     setJustAdded(true)
     setTimeout(() => setJustAdded(false), 1400)
   }
@@ -51,7 +53,7 @@ export default function ProductCard({ product, onOpenModal }: Props) {
 
   if (!product.available) {
     return (
-      <div className="bg-card border border-white/5 rounded-2xl overflow-hidden opacity-50 cursor-not-allowed">
+      <div className="bg-card border border-white/10 rounded-2xl overflow-hidden opacity-50 cursor-not-allowed">
         <div className="relative h-44 bg-surface">
           <Image src={product.image} alt={name} fill className="object-cover grayscale" sizes="300px" />
           <div className="absolute inset-0 flex items-center justify-center bg-black/40">
@@ -72,7 +74,7 @@ export default function ProductCard({ product, onOpenModal }: Props) {
       layout
       whileHover={{ y: -3 }}
       onClick={() => onOpenModal(product)}
-      className="group relative bg-card border border-white/5 rounded-2xl overflow-hidden cursor-pointer hover:border-primary/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300"
+      className="group relative bg-card border border-white/10 rounded-2xl overflow-hidden cursor-pointer hover:border-primary/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300"
     >
       {/* Image */}
       <div className="relative h-44 overflow-hidden bg-surface">
