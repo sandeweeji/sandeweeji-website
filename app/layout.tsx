@@ -55,7 +55,11 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${plusJakarta.variable} bg-background dark`}>
+    <html
+      lang="ar"
+      dir="rtl"
+      className={`${plusJakarta.variable} bg-background dark`}
+    >
       <body className="antialiased font-sans bg-background text-foreground">
         <LocaleHtmlWrapper />
         <Navbar />

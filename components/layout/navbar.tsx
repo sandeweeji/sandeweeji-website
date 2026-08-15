@@ -24,8 +24,11 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const totalItems = useCartStore((s) => s.totalItems());
   const toggleCart = useCartStore((s) => s.toggleCart);
-  const { locale, toggleLocale } = useLocaleStore();
-  const isRtl = locale === "ar";
+
+  /* English / Dynamic Locale switching disabled — Fixed to Arabic & RTL */
+  // const { locale, toggleLocale } = useLocaleStore();
+  const locale = "ar";
+  const isRtl = true;
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
@@ -50,7 +53,7 @@ export default function Navbar() {
             ? "glass-strong border-b border-white/5 shadow-2xl"
             : "bg-transparent",
         )}
-        dir={isRtl ? "rtl" : "ltr"}
+        dir="rtl"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
@@ -68,14 +71,14 @@ export default function Navbar() {
               </motion.div>
               <div className="flex flex-col leading-none">
                 <span className="font-bold text-lg text-foreground tracking-tight">
-                  Sandweeji
+                  ساندويجي
                 </span>
-                <span
+                {/* <span
                   className="text-xs text-primary font-medium tracking-widest"
                   style={{ fontFamily: "serif" }}
                 >
-                  ساندويجي
-                </span>
+                  Sandweeji
+                </span> */}
               </div>
             </Link>
 
@@ -83,7 +86,10 @@ export default function Navbar() {
             <nav className="hidden lg:flex items-center gap-1">
               {NAV_LINKS.map((link) => {
                 const isActive = pathname === link.href;
-                const label = isRtl ? link.keyAr : link.keyEn;
+                // Always select Arabic label
+                const label = link.keyAr;
+                // const label = isRtl ? link.keyAr : link.keyEn;
+
                 return (
                   <Link
                     key={link.href}
@@ -114,15 +120,15 @@ export default function Navbar() {
 
             {/* Right Actions */}
             <div className="flex items-center gap-2">
-              {/* Language Toggle */}
-              <motion.button
+              {/* Language Toggle (Disabled for Arabic-only mode) */}
+              {/* <motion.button
                 whileTap={{ scale: 0.92 }}
                 onClick={toggleLocale}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
               >
                 <Globe className="w-4 h-4" />
                 <span>{locale === "en" ? "AR" : "EN"}</span>
-              </motion.button>
+              </motion.button> */}
 
               {/* Profile 
               <Link href="/profile">
@@ -160,7 +166,7 @@ export default function Navbar() {
               <button
                 onClick={() => setMobileOpen((v) => !v)}
                 className="lg:hidden p-2 rounded-lg text-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
-                aria-label="Toggle menu"
+                aria-label="فتح القائمة"
               >
                 {mobileOpen ? (
                   <X className="w-5 h-5" />
@@ -190,12 +196,12 @@ export default function Navbar() {
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 35 }}
               className="fixed right-0 top-0 bottom-0 z-50 w-72 glass-strong border-l border-white/5 lg:hidden flex flex-col"
-              dir={isRtl ? "rtl" : "ltr"}
+              dir="rtl"
             >
               <div className="p-6 border-b border-white/10">
                 <div className="flex items-center justify-between">
                   <span className="text-lg font-bold text-foreground">
-                    Sandweeji
+                    ساندويجي
                   </span>
                   <button
                     onClick={() => setMobileOpen(false)}
@@ -208,7 +214,10 @@ export default function Navbar() {
               <nav className="flex-1 p-6 flex flex-col gap-2">
                 {NAV_LINKS.map((link) => {
                   const isActive = pathname === link.href;
-                  const label = isRtl ? link.keyAr : link.keyEn;
+                  // Always select Arabic label
+                  const label = link.keyAr;
+                  // const label = isRtl ? link.keyAr : link.keyEn;
+
                   return (
                     <Link
                       key={link.href}
@@ -225,7 +234,7 @@ export default function Navbar() {
                   );
                 })}
               </nav>
-              <div className="p-6 border-t border-white/10 flex items-center gap-3">
+              {/* <div className="p-6 border-t border-white/10 flex items-center gap-3">
                 <Button
                   variant="outline"
                   size="sm"
@@ -235,17 +244,7 @@ export default function Navbar() {
                   <Globe className="w-4 h-4 mr-2" />
                   {locale === "en" ? "عربي" : "English"}
                 </Button>
-                {/* <Link href="/profile" className="flex-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full border-white/10 text-foreground/70"
-                  >
-                    <User className="w-4 h-4 mr-2" />
-                    {t("profile", locale)}
-                  </Button>
-                </Link> */}
-              </div>
+              </div> */}
             </motion.div>
           </>
         )}
