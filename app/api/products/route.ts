@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, ExtraType } from "@prisma/client";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 interface ExtraInput {
   type?: "ADD" | "REMOVE";
@@ -10,9 +11,11 @@ interface ExtraInput {
   sortOrder?: number;
 }
 
-function buildExtrasCreate(extras: ExtraInput[]) {
+function buildExtrasCreate(
+  extras: ExtraInput[],
+): Prisma.ExtraCreateWithoutProductInput[] {
   return extras.map((extra, index) => ({
-    type: extra.type === "REMOVE" ? "REMOVE" : "ADD",
+    type: extra.type === "REMOVE" ? ExtraType.REMOVE : ExtraType.ADD,
     nameAr: extra.nameAr?.trim() || "",
     nameEn: extra.nameEn?.trim() || null,
     price:
@@ -47,17 +50,38 @@ export async function GET(request: Request) {
 
     if (search) {
       where.OR = [
-        { nameAr: { contains: search, mode: "insensitive" } },
-        { nameEn: { contains: search, mode: "insensitive" } },
+        {
+          nameAr: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          nameEn: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
       ];
     }
 
     const products = await prisma.product.findMany({
       where,
       include: {
-        extras: { orderBy: { sortOrder: "asc" } },
+        extras: {
+          orderBy: {
+            sortOrder: "asc",
+          },
+        },
       },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+      orderBy: [
+        {
+          sortOrder: "asc",
+        },
+        {
+          createdAt: "desc",
+        },
+      ],
     });
 
     const serializedProducts = products.map((product) => ({
@@ -78,8 +102,13 @@ export async function GET(request: Request) {
     console.error("GET /api/products error:", error);
 
     return NextResponse.json(
-      { status: 500, message: "حدث خطأ أثناء جلب المنتجات." },
-      { status: 500 },
+      {
+        status: 500,
+        message: "حدث خطأ أثناء جلب المنتجات.",
+      },
+      {
+        status: 500,
+      },
     );
   }
 }
@@ -89,6 +118,19 @@ export async function GET(request: Request) {
 /* -------------------------------------------------------------------------- */
 
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+
+  if (!auth.authorized) {
+    return NextResponse.json(
+      {
+        message: "Unauthorized",
+      },
+      {
+        status: auth.status,
+      },
+    );
+  }
+
   try {
     const body = await request.json();
 
@@ -111,36 +153,66 @@ export async function POST(request: Request) {
 
     if (!categoryId) {
       return NextResponse.json(
-        { status: 400, message: "التصنيف مطلوب." },
-        { status: 400 },
-      );
-    }
-
-    if (!nameAr?.trim()) {
-      return NextResponse.json(
-        { status: 400, message: "اسم المنتج مطلوب." },
-        { status: 400 },
-      );
-    }
-
-    if (!descriptionAr?.trim()) {
-      return NextResponse.json(
-        { status: 400, message: "وصف المنتج مطلوب." },
-        { status: 400 },
-      );
-    }
-
-    if (price === undefined || price === null || Number(price) < 0 || Number.isNaN(Number(price))) {
-      return NextResponse.json(
-        { status: 400, message: "سعر المنتج غير صالح." },
-        { status: 400 },
+        {
+          status: 400,
+          message: "التصنيف مطلوب.",
+        },
+        {
+          status: 400,
+        },
       );
     }
 
     if (!image?.trim()) {
       return NextResponse.json(
-        { status: 400, message: "صورة المنتج مطلوبة." },
-        { status: 400 },
+        {
+          status: 400,
+          message: "صورة المنتج مطلوبة.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (!nameAr?.trim()) {
+      return NextResponse.json(
+        {
+          status: 400,
+          message: "اسم المنتج مطلوب.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (!descriptionAr?.trim()) {
+      return NextResponse.json(
+        {
+          status: 400,
+          message: "وصف المنتج مطلوب.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      price === undefined ||
+      price === null ||
+      Number(price) < 0 ||
+      Number.isNaN(Number(price))
+    ) {
+      return NextResponse.json(
+        {
+          status: 400,
+          message: "سعر المنتج غير صالح.",
+        },
+        {
+          status: 400,
+        },
       );
     }
 
@@ -151,8 +223,13 @@ export async function POST(request: Request) {
       (Number.isNaN(Number(calories)) || Number(calories) < 0)
     ) {
       return NextResponse.json(
-        { status: 400, message: "السعرات الحرارية غير صالحة." },
-        { status: 400 },
+        {
+          status: 400,
+          message: "السعرات الحرارية غير صالحة.",
+        },
+        {
+          status: 400,
+        },
       );
     }
 
@@ -160,8 +237,13 @@ export async function POST(request: Request) {
       for (const extra of extras as ExtraInput[]) {
         if (!extra.nameAr?.trim()) {
           return NextResponse.json(
-            { status: 400, message: "كل خيار إضافي يجب أن يحتوي على اسم." },
-            { status: 400 },
+            {
+              status: 400,
+              message: "كل خيار إضافي يجب أن يحتوي على اسم.",
+            },
+            {
+              status: 400,
+            },
           );
         }
 
@@ -171,8 +253,13 @@ export async function POST(request: Request) {
           (Number.isNaN(Number(extra.price)) || Number(extra.price) < 0)
         ) {
           return NextResponse.json(
-            { status: 400, message: "سعر أحد الإضافات غير صالح." },
-            { status: 400 },
+            {
+              status: 400,
+              message: "سعر أحد الإضافات غير صالح.",
+            },
+            {
+              status: 400,
+            },
           );
         }
       }
@@ -181,13 +268,20 @@ export async function POST(request: Request) {
     /* ---------------------------- Check category --------------------------- */
 
     const category = await prisma.category.findUnique({
-      where: { id: categoryId },
+      where: {
+        id: categoryId,
+      },
     });
 
     if (!category) {
       return NextResponse.json(
-        { status: 404, message: "التصنيف المحدد غير موجود." },
-        { status: 404 },
+        {
+          status: 404,
+          message: "التصنيف المحدد غير موجود.",
+        },
+        {
+          status: 404,
+        },
       );
     }
 
@@ -196,33 +290,53 @@ export async function POST(request: Request) {
     const product = await prisma.product.create({
       data: {
         categoryId,
+
         nameAr: nameAr.trim(),
         nameEn: nameEn?.trim() || null,
+
         descriptionAr: descriptionAr.trim(),
         descriptionEn: descriptionEn?.trim() || null,
+
         price: new Prisma.Decimal(price),
-        image: image.trim(),
+
+        // image is optional
+        image: image?.trim() || null,
+
         calories:
           calories === undefined || calories === null || calories === ""
             ? null
             : Number(calories),
+
         badges: Array.isArray(badges) ? badges : [],
+
         available: available ?? true,
+
         sortOrder:
           sortOrder === undefined || sortOrder === null ? 0 : Number(sortOrder),
+
         extras:
           Array.isArray(extras) && extras.length > 0
-            ? { create: buildExtrasCreate(extras) }
+            ? {
+                create: buildExtrasCreate(extras),
+              }
             : undefined,
       },
+
       include: {
-        extras: { orderBy: { sortOrder: "asc" } },
+        extras: {
+          orderBy: {
+            sortOrder: "asc",
+          },
+        },
       },
     });
+
+    /* ---------------------------- Serialize ------------------------------- */
 
     const serializedProduct = {
       ...product,
       price: Number(product.price),
+
       extras: product.extras.map((extra) => ({
         ...extra,
         price: Number(extra.price),
@@ -235,14 +349,21 @@ export async function POST(request: Request) {
         message: "تمت إضافة المنتج بنجاح.",
         data: serializedProduct,
       },
-      { status: 201 },
+      {
+        status: 201,
+      },
     );
   } catch (error) {
     console.error("POST /api/products error:", error);
 
     return NextResponse.json(
-      { status: 500, message: "حدث خطأ أثناء إضافة المنتج." },
-      { status: 500 },
+      {
+        status: 500,
+        message: "حدث خطأ أثناء إضافة المنتج.",
+      },
+      {
+        status: 500,
+      },
     );
   }
 }

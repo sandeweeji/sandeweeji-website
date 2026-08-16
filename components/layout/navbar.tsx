@@ -72,7 +72,7 @@ export default function Navbar() {
         {/* Bottom gradient accent */}
         <div
           className={cn(
-            "absolute bottom-0 left-0 right-0 h-[1px]",
+            "absolute bottom-0 left-0 right-0 h-[1px] justify-between ",
             "bg-gradient-to-r",
             "from-transparent",
             "via-primary/70",
@@ -104,9 +104,9 @@ export default function Navbar() {
                 <Image
                   src={logo}
                   alt="ساندويجي Sandweeji Logo"
-                  fill
                   priority
                   className="object-contain object-right lg:object-center"
+                  fill
                 />
               </motion.div>
             </Link>
@@ -337,9 +337,9 @@ export default function Navbar() {
                     <Image
                       src={logo}
                       alt="ساندويجي Sandweeji Logo"
-                      fill
                       priority
                       className="object-contain object-right"
+                      fill
                     />
                   </Link>
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 interface RouteContext {
   params: Promise<{
@@ -46,12 +47,22 @@ export async function GET(_request: Request, context: RouteContext) {
 /* -------------------------------------------------------------------------- */
 
 export async function PUT(request: Request, context: RouteContext) {
+  const auth = await requireAdmin();
+
+  if (!auth.authorized) {
+    return NextResponse.json(
+      { message: "Unauthorized" },
+      { status: auth.status },
+    );
+  }
   try {
     const { id } = await context.params;
     const body = await request.json();
     const { nameAr, nameEn, emoji, visible, sortOrder } = body;
 
-    const existingCategory = await prisma.category.findUnique({ where: { id } });
+    const existingCategory = await prisma.category.findUnique({
+      where: { id },
+    });
 
     if (!existingCategory) {
       return NextResponse.json(
@@ -111,6 +122,14 @@ export async function PUT(request: Request, context: RouteContext) {
 /* -------------------------------------------------------------------------- */
 
 export async function DELETE(_request: Request, context: RouteContext) {
+  const auth = await requireAdmin();
+
+  if (!auth.authorized) {
+    return NextResponse.json(
+      { message: "Unauthorized" },
+      { status: auth.status },
+    );
+  }
   try {
     const { id } = await context.params;
 

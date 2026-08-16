@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer, PRODUCT_IMAGES_BUCKET } from "@/lib/supabase-server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 export const runtime = "nodejs";
 
@@ -7,6 +8,14 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+
+  if (!auth.authorized) {
+    return NextResponse.json(
+      { message: "Unauthorized" },
+      { status: auth.status },
+    );
+  }
   try {
     const formData = await request.formData();
     const file = formData.get("file");
@@ -30,7 +39,10 @@ export async function POST(request: Request) {
 
     if (file.size > MAX_SIZE_BYTES) {
       return NextResponse.json(
-        { status: 400, message: "حجم الصورة كبير جدًا. الحد الأقصى 5 ميغابايت." },
+        {
+          status: 400,
+          message: "حجم الصورة كبير جدًا. الحد الأقصى 5 ميغابايت.",
+        },
         { status: 400 },
       );
     }

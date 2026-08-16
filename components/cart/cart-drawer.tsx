@@ -1397,8 +1397,6 @@ export default function CartDrawer() {
                         transition-opacity
                       "
                     >
-                      {isRtl ? "متابعة إلى التوصيل" : "Continue to delivery"}
-
                       {isRtl ? (
                         <ArrowLeft className="w-4 h-4" />
                       ) : (

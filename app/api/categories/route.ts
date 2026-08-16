@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 /* -------------------------------------------------------------------------- */
 /* GET - Get all categories                                                   */
@@ -36,6 +37,14 @@ export async function GET() {
 /* -------------------------------------------------------------------------- */
 
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+
+  if (!auth.authorized) {
+    return NextResponse.json(
+      { message: "Unauthorized" },
+      { status: auth.status },
+    );
+  }
   try {
     const body = await request.json();
     const { nameAr, nameEn, emoji, visible, sortOrder } = body;
@@ -60,7 +69,8 @@ export async function POST(request: Request) {
         nameEn: nameEn?.trim() || null,
         emoji: emoji.trim(),
         visible: visible ?? true,
-        sortOrder: sortOrder === undefined || sortOrder === null ? 0 : Number(sortOrder),
+        sortOrder:
+          sortOrder === undefined || sortOrder === null ? 0 : Number(sortOrder),
       },
       include: {
         _count: {

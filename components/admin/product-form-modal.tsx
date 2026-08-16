@@ -254,7 +254,7 @@ export default function ProductFormModal({
 
     if (!form.nameAr.trim()) next.nameAr = "الاسم مطلوب";
     if (!form.categoryId) next.categoryId = "التصنيف مطلوب";
-    if (!form.image.trim()) next.image = "رابط الصورة مطلوب";
+    //  if (!form.image.trim()) next.image = "رابط الصورة مطلوب";
 
     const priceNumber = Number(form.price);
     if (!form.price.trim() || Number.isNaN(priceNumber) || priceNumber < 0) {
