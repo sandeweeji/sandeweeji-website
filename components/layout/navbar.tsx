@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, Menu, X, ChefHat } from "lucide-react";
-
+import { ShoppingCart, Menu, X } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { cn } from "@/lib/utils";
+import logo from "@/public/logo.png";
 
 const NAV_LINKS = [
   { href: "/", keyEn: "Home", keyAr: "الرئيسية" },
@@ -88,39 +89,26 @@ export default function Navbar() {
             ========================== */}
             <Link
               href="/"
-              className="flex items-center gap-2.5 group flex-shrink-0"
+              className="flex items-center gap-2 group shrink-0 my-auto"
             >
               <motion.div
-                whileHover={{
-                  rotate: 8,
-                  scale: 1.04,
-                }}
+                whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{
                   type: "spring",
                   stiffness: 400,
                   damping: 20,
                 }}
-                className="relative w-9 h-9 lg:w-10 lg:h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-lg"
+                className="relative h-11 w-36 lg:h-14 lg:w-44 flex items-center justify-center"
               >
-                {/* Restaurant gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary via-orange-500 to-red-600" />
-
-                <ChefHat className="relative z-10 w-5 h-5 text-white" />
-
-                {/* Shine */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
+                <Image
+                  src={logo}
+                  alt="ساندويجي Sandweeji Logo"
+                  fill
+                  priority
+                  className="object-contain object-right lg:object-center"
+                />
               </motion.div>
-
-              <div className="flex flex-col leading-none">
-                <span className="font-bold text-lg lg:text-xl text-foreground tracking-tight">
-                  ساندويجي
-                </span>
-
-                <span className="text-[9px] lg:text-[10px] text-primary/80 font-medium tracking-[0.2em] mt-1">
-                  SANDWEEJI
-                </span>
-              </div>
             </Link>
 
             {/* =========================
@@ -220,7 +208,7 @@ export default function Navbar() {
                         "absolute",
                         "-top-2",
                         "-right-2",
-                        "min-w-[20px]",
+                        "min-w-5",
                         "h-5",
                         "px-1",
                         "flex items-center justify-center",
@@ -241,8 +229,6 @@ export default function Navbar() {
 
               {/* =========================
                   MOBILE MENU BUTTON
-                  Only exists when drawer
-                  is CLOSED.
               ========================== */}
               <AnimatePresence mode="wait" initial={false}>
                 {!mobileOpen && (
@@ -339,7 +325,6 @@ export default function Navbar() {
                   DRAWER HEADER
               ========================== */}
               <div className="relative p-5 border-b border-white/10 shrink-0">
-                {/* Header bottom accent */}
                 <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
                 <div className="flex items-center justify-between">
@@ -347,23 +332,15 @@ export default function Navbar() {
                   <Link
                     href="/"
                     onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-2.5"
+                    className="relative h-10 w-32 flex items-center"
                   >
-                    <div className="relative w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center">
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary via-orange-500 to-red-600" />
-
-                      <ChefHat className="relative z-10 w-5 h-5 text-white" />
-                    </div>
-
-                    <div className="flex flex-col leading-none">
-                      <span className="text-lg font-bold text-white">
-                        ساندويجي
-                      </span>
-
-                      <span className="text-[9px] tracking-[0.2em] text-primary mt-1">
-                        SANDWEEJI
-                      </span>
-                    </div>
+                    <Image
+                      src={logo}
+                      alt="ساندويجي Sandweeji Logo"
+                      fill
+                      priority
+                      className="object-contain object-right"
+                    />
                   </Link>
 
                   {/* ONLY MOBILE CLOSE BUTTON */}
@@ -422,7 +399,6 @@ export default function Navbar() {
                             : "text-white/70 font-medium hover:text-white hover:bg-white/5",
                         )}
                       >
-                        {/* Active indicator */}
                         {isActive && (
                           <span className="absolute right-0 top-2 bottom-2 w-[3px] rounded-full bg-gradient-to-b from-primary to-orange-500" />
                         )}
@@ -438,7 +414,6 @@ export default function Navbar() {
                   MOBILE CART BUTTON
               ========================== */}
               <div className="relative p-5 border-t border-white/10 shrink-0">
-                {/* Top accent */}
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
 
                 <button
@@ -461,10 +436,7 @@ export default function Navbar() {
                     "transition-shadow",
                   )}
                 >
-                  {/* Gradient */}
                   <div className="absolute inset-0 bg-gradient-to-r from-primary via-orange-500 to-red-600" />
-
-                  {/* Highlight */}
                   <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-transparent to-transparent" />
 
                   <ShoppingCart className="relative z-10 w-5 h-5" />
