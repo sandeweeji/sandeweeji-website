@@ -216,6 +216,6 @@ export const translations = {
 
 export type TranslationKey = keyof typeof translations.en;
 
-export function t(key: TranslationKey, locale: "en" | "ar"): string {
+export function t(key: TranslationKey, locale: "ar"): string {
   return translations[locale][key] ?? key;
 }
