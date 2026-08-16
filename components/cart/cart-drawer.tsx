@@ -1,21 +1,45 @@
-'use client'
-import Image from 'next/image'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Minus, Plus, Trash2, ShoppingBag, MessageCircle, ArrowRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { useCartStore } from '@/lib/cart-store'
-import { useLocaleStore } from '@/lib/locale-store'
-import { t } from '@/lib/i18n'
-import { RESTAURANT_SETTINGS } from '@/lib/data'
-import { formatPrice } from '@/lib/utils'
-import type { CartItem } from '@/lib/types'
+"use client";
+
+import Image from "next/image";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  X,
+  Minus,
+  Plus,
+  Trash2,
+  ShoppingBag,
+  MessageCircle,
+  ArrowRight,
+  MapPin,
+  User,
+  Phone,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+
+import { useCartStore } from "@/lib/cart-store";
+import { useLocaleStore } from "@/lib/locale-store";
+import { t } from "@/lib/i18n";
+import { RESTAURANT_SETTINGS } from "@/lib/data";
+import { formatPrice } from "@/lib/utils";
+import type { CartItem } from "@/lib/types";
+import { Input } from "@base-ui/react";
 
 function CartItemRow({ item }: { item: CartItem }) {
-  const { updateQuantity, removeItem } = useCartStore()
-  const { locale } = useLocaleStore()
-  const name    = locale === 'ar' ? item.nameAr : item.nameEn
-  const itemTotal = (item.price + item.extras.reduce((s, e) => s + e.price, 0)) * item.quantity
+  const { updateQuantity, removeItem } = useCartStore();
+  const { locale } = useLocaleStore();
+
+  const name = locale === "ar" ? item.nameAr : item.nameEn;
+
+  const itemTotal =
+    (item.price + item.extras.reduce((sum, extra) => sum + extra.price, 0)) *
+    item.quantity;
+
+  const addedExtras = item.extras.filter((extra) => extra.type === "ADD");
+
+  const removedExtras = item.extras.filter((extra) => extra.type === "REMOVE");
 
   return (
     <motion.div
@@ -24,94 +48,262 @@ function CartItemRow({ item }: { item: CartItem }) {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -40, height: 0 }}
       transition={{ duration: 0.25 }}
-      className="flex gap-3 py-4"
+      className="py-4"
     >
-      <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface">
-        <Image
-          src={item.image}
-          alt={name}
-          fill
-          className="object-cover"
-          sizes="64px"
-        />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground truncate">{name}</p>
-        {item.extras.length > 0 && (
-          <p className="text-xs text-muted-foreground mt-0.5">
-            +{item.extras.map(e => locale === 'ar' ? e.nameAr : e.nameEn).join(', ')}
-          </p>
-        )}
-        {item.notes && (
-          <p className="text-xs text-primary/70 mt-0.5 italic truncate">📝 {item.notes}</p>
-        )}
-        <div className="flex items-center justify-between mt-2">
-          {/* Qty Controls */}
-          <div className="flex items-center gap-2">
-            <motion.button
-              whileTap={{ scale: 0.85 }}
-              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-              className="w-7 h-7 rounded-lg bg-surface-elevated border border-white/10 flex items-center justify-center text-foreground/70 hover:text-foreground hover:border-primary/40 transition-colors"
-              aria-label="Decrease"
-            >
-              <Minus className="w-3 h-3" />
-            </motion.button>
-            <span className="text-sm font-semibold w-5 text-center text-foreground">{item.quantity}</span>
-            <motion.button
-              whileTap={{ scale: 0.85 }}
-              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-              className="w-7 h-7 rounded-lg bg-surface-elevated border border-white/10 flex items-center justify-center text-foreground/70 hover:text-foreground hover:border-primary/40 transition-colors"
-              aria-label="Increase"
-            >
-              <Plus className="w-3 h-3" />
-            </motion.button>
-          </div>
-          {/* Price */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-primary">{formatPrice(itemTotal)}</span>
-            <motion.button
-              whileTap={{ scale: 0.85 }}
+      <div className="flex gap-3">
+        {/* Image */}
+        <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface">
+          <Image
+            src={item.image}
+            alt={name}
+            fill
+            className="object-cover"
+            sizes="64px"
+          />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Product name */}
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-bold text-foreground leading-tight">
+              {name}
+            </p>
+
+            <button
+              type="button"
               onClick={() => removeItem(item.id)}
-              className="p-1 rounded-lg text-destructive/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
-              aria-label={t('remove', locale)}
+              className="
+                p-1
+                rounded-lg
+                text-muted-foreground/50
+                hover:text-destructive
+                hover:bg-destructive/10
+                transition-colors
+                flex-shrink-0
+              "
+              aria-label={t("remove", locale)}
             >
               <Trash2 className="w-3.5 h-3.5" />
-            </motion.button>
+            </button>
+          </div>
+
+          {/* Added extras */}
+          {addedExtras.length > 0 && (
+            <div className="mt-2 space-y-0.5">
+              {addedExtras.map((extra) => {
+                const extraName =
+                  locale === "ar"
+                    ? extra.nameAr
+                    : (extra.nameEn ?? extra.nameAr);
+
+                return (
+                  <p key={extra.id} className="text-xs text-primary/80">
+                    + {extraName}
+                  </p>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Removed ingredients */}
+          {removedExtras.length > 0 && (
+            <div className="mt-1 space-y-0.5">
+              {removedExtras.map((extra) => {
+                const extraName =
+                  locale === "ar"
+                    ? extra.nameAr
+                    : (extra.nameEn ?? extra.nameAr);
+
+                return (
+                  <p key={extra.id} className="text-xs text-red-400/80">
+                    {locale === "ar" ? `بدون ${extraName}` : `No ${extraName}`}
+                  </p>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Notes */}
+          {item.notes && (
+            <p className="text-xs text-muted-foreground mt-1.5 italic break-words">
+              📝 {item.notes}
+            </p>
+          )}
+
+          {/* Quantity + Price */}
+          <div className="flex items-center justify-between gap-3 mt-3">
+            <div className="flex items-center gap-2">
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.85 }}
+                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                className="
+                  w-7 h-7
+                  rounded-lg
+                  bg-surface-elevated
+                  border border-white/10
+                  flex items-center justify-center
+                  text-foreground/70
+                  hover:text-foreground
+                  hover:border-primary/40
+                  transition-colors
+                "
+                aria-label="Decrease"
+              >
+                <Minus className="w-3 h-3" />
+              </motion.button>
+
+              <span className="text-sm font-semibold w-5 text-center text-foreground">
+                {item.quantity}
+              </span>
+
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.85 }}
+                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                className="
+                  w-7 h-7
+                  rounded-lg
+                  bg-surface-elevated
+                  border border-white/10
+                  flex items-center justify-center
+                  text-foreground/70
+                  hover:text-foreground
+                  hover:border-primary/40
+                  transition-colors
+                "
+                aria-label="Increase"
+              >
+                <Plus className="w-3 h-3" />
+              </motion.button>
+            </div>
+
+            <span className="text-sm font-bold text-primary whitespace-nowrap">
+              {formatPrice(itemTotal)}
+            </span>
           </div>
         </div>
       </div>
     </motion.div>
-  )
+  );
 }
 
 export default function CartDrawer() {
-  const { items, isOpen, closeCart, clearCart, subtotal } = useCartStore()
-  const { locale } = useLocaleStore()
-  const isRtl = locale === 'ar'
-  const total = subtotal()
+  const { items, isOpen, closeCart, clearCart, subtotal } = useCartStore();
+
+  const { locale } = useLocaleStore();
+
+  const isRtl = locale === "ar";
+  const total = subtotal();
+
+  const [address, setAddress] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [error, setError] = useState("");
 
   const handleWhatsAppOrder = () => {
-    const greeting = t('whatsappGreeting', locale)
-    let message = greeting
-    items.forEach(item => {
-      const name = locale === 'ar' ? item.nameAr : item.nameEn
-      message += `\n• ${item.quantity}x ${name}`
-      if (item.extras.length > 0) {
-        const extraNames = item.extras.map(e => locale === 'ar' ? e.nameAr : e.nameEn).join(', ')
-        message += ` (+${extraNames})`
-      }
-      if (item.notes) {
-        message += `\n  _${item.notes}_`
-      }
-    })
-    message += `${t('whatsappTotal', locale)}${formatPrice(total)}`
-    message += `${t('whatsappName', locale)}`
-    message += `${t('whatsappPhone', locale)}`
+    const cleanAddress = address.trim();
 
-    const phone = RESTAURANT_SETTINGS.whatsappNumber.replace(/[^0-9]/g, '')
-    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
-    window.open(waUrl, '_blank', 'noopener,noreferrer')
-  }
+    if (!cleanAddress) {
+      setError(
+        isRtl
+          ? "يرجى إدخال عنوان التوصيل"
+          : "Please enter your delivery address.",
+      );
+      return;
+    }
+
+    if (!name.trim() && !phone.trim()) {
+      setError(
+        isRtl
+          ? "يرجى إدخال الاسم أو رقم الهاتف"
+          : "Please enter your name or phone number.",
+      );
+      return;
+    }
+
+    setError("");
+
+    let message = isRtl
+      ? "مرحباً، أريد طلب:\n"
+      : "Hello, I would like to place an order:\n";
+
+    items.forEach((item) => {
+      const itemName = locale === "ar" ? item.nameAr : item.nameEn;
+
+      const addedExtras = item.extras.filter((extra) => extra.type === "ADD");
+
+      const removedExtras = item.extras.filter(
+        (extra) => extra.type === "REMOVE",
+      );
+
+      message += `\n• ${item.quantity}x ${itemName}`;
+
+      if (addedExtras.length > 0) {
+        message += locale === "ar" ? "\n  إضافات:" : "\n  Add-ons:";
+
+        addedExtras.forEach((extra) => {
+          const extraName =
+            locale === "ar" ? extra.nameAr : (extra.nameEn ?? extra.nameAr);
+
+          message += `\n  + ${extraName}`;
+        });
+      }
+
+      if (removedExtras.length > 0) {
+        message += locale === "ar" ? "\n  بدون:" : "\n  Without:";
+
+        removedExtras.forEach((extra) => {
+          const extraName =
+            locale === "ar" ? extra.nameAr : (extra.nameEn ?? extra.nameAr);
+
+          message += `\n  - ${extraName}`;
+        });
+      }
+
+      if (item.notes?.trim()) {
+        message +=
+          locale === "ar"
+            ? `\n  ملاحظات: ${item.notes.trim()}`
+            : `\n  Notes: ${item.notes.trim()}`;
+      }
+
+      message += "\n";
+    });
+
+    message +=
+      locale === "ar"
+        ? `\nالمجموع: ${formatPrice(total)}`
+        : `\nTotal: ${formatPrice(total)}`;
+
+    message +=
+      locale === "ar"
+        ? `\nالعنوان: ${cleanAddress}`
+        : `\nDelivery address: ${cleanAddress}`;
+
+    if (name.trim()) {
+      message +=
+        locale === "ar" ? `\nالاسم: ${name.trim()}` : `\nName: ${name.trim()}`;
+    }
+
+    if (phone.trim()) {
+      message +=
+        locale === "ar"
+          ? `\nرقم الهاتف: ${phone.trim()}`
+          : `\nPhone: ${phone.trim()}`;
+    }
+
+    message += locale === "ar" ? "\n\nشكراً!" : "\n\nThank you!";
+
+    const phoneNumber = RESTAURANT_SETTINGS.whatsappNumber.replace(/\D/g, "");
+
+    const waUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
+      message,
+    )}`;
+
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <AnimatePresence>
@@ -128,61 +320,108 @@ export default function CartDrawer() {
 
           {/* Drawer */}
           <motion.div
-            initial={{ x: isRtl ? '-100%' : '100%' }}
+            initial={{
+              x: isRtl ? "-100%" : "100%",
+            }}
             animate={{ x: 0 }}
-            exit={{ x: isRtl ? '-100%' : '100%' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 35 }}
-            className={`fixed top-0 bottom-0 z-50 w-full max-w-md flex flex-col glass-strong border-white/5 shadow-2xl ${isRtl ? 'left-0 border-r' : 'right-0 border-l'}`}
-            dir={isRtl ? 'rtl' : 'ltr'}
+            exit={{
+              x: isRtl ? "-100%" : "100%",
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 35,
+            }}
+            className={`
+              fixed
+              top-0 bottom-0
+              z-50
+              w-full
+              max-w-md
+              flex flex-col
+              bg-card/95
+              backdrop-blur-xl
+              border-white/5
+              shadow-2xl
+              ${isRtl ? "left-0 border-r" : "right-0 border-l"}
+            `}
+            dir={isRtl ? "rtl" : "ltr"}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 sm:py-5 border-b border-white/10">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center">
                   <ShoppingBag className="w-5 h-5 text-primary" />
                 </div>
+
                 <div>
-                  <h2 className="text-base font-bold text-foreground">{t('yourCart', locale)}</h2>
+                  <h2 className="text-base font-bold text-foreground">
+                    {t("yourCart", locale)}
+                  </h2>
+
                   <p className="text-xs text-muted-foreground">
-                    {items.length} {t('cartItems', locale)}
+                    {items.length} {t("cartItems", locale)}
                   </p>
                 </div>
               </div>
+
               <button
+                type="button"
                 onClick={closeCart}
-                className="p-2 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors"
+                className="
+                  p-2
+                  rounded-lg
+                  hover:bg-white/5
+                  text-muted-foreground
+                  hover:text-foreground
+                  transition-colors
+                "
                 aria-label="Close cart"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Items */}
-            <div className="flex-1 overflow-y-auto px-6 scrollbar-hide">
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-5 sm:px-6 scrollbar-hide">
               {items.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-col items-center justify-center h-full gap-4 py-16"
+                  className="
+                    flex flex-col
+                    items-center
+                    justify-center
+                    h-full
+                    gap-4
+                    py-16
+                  "
                 >
                   <div className="w-20 h-20 rounded-2xl bg-surface border border-white/10 flex items-center justify-center">
                     <ShoppingBag className="w-10 h-10 text-muted-foreground/40" />
                   </div>
+
                   <div className="text-center">
-                    <p className="text-base font-semibold text-foreground">{t('cartEmpty', locale)}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{t('cartEmptyDesc', locale)}</p>
+                    <p className="text-base font-semibold text-foreground">
+                      {t("cartEmpty", locale)}
+                    </p>
+
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {t("cartEmptyDesc", locale)}
+                    </p>
                   </div>
+
                   <Button
                     onClick={closeCart}
                     className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl"
                   >
-                    {t('browseMenu', locale)}
+                    {t("browseMenu", locale)}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </motion.div>
               ) : (
                 <AnimatePresence mode="popLayout">
-                  {items.map(item => (
+                  {items.map((item) => (
                     <CartItemRow key={item.id} item={item} />
                   ))}
                 </AnimatePresence>
@@ -191,36 +430,190 @@ export default function CartDrawer() {
 
             {/* Footer */}
             {items.length > 0 && (
-              <div className="px-6 py-5 border-t border-white/10 space-y-4">
+              <div className="px-5 sm:px-6 py-4 sm:py-5 border-t border-white/10 space-y-4 max-h-[48vh] overflow-y-auto">
+                {/* Delivery information */}
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">
+                      {isRtl ? "معلومات التوصيل" : "Delivery information"}
+                    </h3>
+
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {isRtl
+                        ? "العنوان إلزامي، والاسم ورقم الهاتف اختياريان."
+                        : "Address is required. Name and phone are optional."}
+                    </p>
+                  </div>
+
+                  {/* Address */}
+                  <div className="relative">
+                    <MapPin
+                      className={`
+                        absolute
+                        top-3.5
+                        ${isRtl ? "right-3" : "left-3"}
+                        w-4 h-4
+                        text-primary
+                        pointer-events-none
+                      `}
+                    />
+
+                    <Input
+                      value={address}
+                      onChange={(e) => {
+                        setAddress(e.target.value);
+                        if (error) setError("");
+                      }}
+                      placeholder={
+                        isRtl ? "عنوان التوصيل *" : "Delivery address *"
+                      }
+                      className={`
+                        h-11
+                        bg-surface
+                        border-white/10
+                        text-foreground
+                        placeholder:text-muted-foreground/50
+                        focus:border-primary/50
+                        ${isRtl ? "pr-10" : "pl-10"}
+                      `}
+                    />
+                  </div>
+
+                  {/* Optional name + phone */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="relative">
+                      <User
+                        className={`
+                          absolute
+                          top-3.5
+                          ${isRtl ? "right-3" : "left-3"}
+                          w-4 h-4
+                          text-muted-foreground
+                          pointer-events-none
+                        `}
+                      />
+
+                      <Input
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder={
+                          isRtl ? "الاسم (اختياري)" : "Name (optional)"
+                        }
+                        className={`
+                          h-11
+                          bg-surface
+                          border-white/10
+                          text-foreground
+                          placeholder:text-muted-foreground/50
+                          focus:border-primary/50
+                          ${isRtl ? "pr-10" : "pl-10"}
+                        `}
+                      />
+                    </div>
+
+                    <div className="relative">
+                      <Phone
+                        className={`
+                          absolute
+                          top-3.5
+                          ${isRtl ? "right-3" : "left-3"}
+                          w-4 h-4
+                          text-muted-foreground
+                          pointer-events-none
+                        `}
+                      />
+
+                      <Input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder={
+                          isRtl ? "الهاتف (اختياري)" : "Phone (optional)"
+                        }
+                        className={`
+                          h-11
+                          bg-surface
+                          border-white/10
+                          text-foreground
+                          placeholder:text-muted-foreground/50
+                          focus:border-primary/50
+                          ${isRtl ? "pr-10" : "pl-10"}
+                        `}
+                      />
+                    </div>
+                  </div>
+
+                  {error && (
+                    <p className="text-xs text-red-400 font-medium">{error}</p>
+                  )}
+                </div>
+
                 {/* Totals */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{t('subtotal', locale)}</span>
-                    <span className="text-foreground font-medium">{formatPrice(total)}</span>
+                    <span className="text-muted-foreground">
+                      {t("subtotal", locale)}
+                    </span>
+
+                    <span className="text-foreground font-medium">
+                      {formatPrice(total)}
+                    </span>
                   </div>
+
                   <Separator className="bg-white/5" />
+
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-bold text-foreground">{t('total', locale)}</span>
-                    <span className="text-xl font-bold text-primary">{formatPrice(total)}</span>
+                    <span className="text-base font-bold text-foreground">
+                      {t("total", locale)}
+                    </span>
+
+                    <span className="text-xl font-bold text-primary">
+                      {formatPrice(total)}
+                    </span>
                   </div>
                 </div>
 
-                {/* WhatsApp CTA */}
+                {/* WhatsApp */}
                 <motion.button
+                  type="button"
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleWhatsAppOrder}
-                  className="w-full py-4 rounded-xl bg-[#25D366] text-white font-bold text-base flex items-center justify-center gap-3 shadow-lg hover:bg-[#1ebe5d] transition-colors"
+                  className="
+                    w-full
+                    py-3.5 sm:py-4
+                    rounded-xl
+                    bg-[#25D366]
+                    text-white
+                    font-bold
+                    text-sm sm:text-base
+                    flex items-center
+                    justify-center
+                    gap-3
+                    shadow-lg
+                    hover:bg-[#1ebe5d]
+                    transition-colors
+                  "
                 >
                   <MessageCircle className="w-5 h-5" />
-                  {t('sendOrder', locale)}
+
+                  {t("sendOrder", locale)}
                 </motion.button>
 
+                {/* Clear cart */}
                 <button
+                  type="button"
                   onClick={clearCart}
-                  className="w-full text-xs text-muted-foreground hover:text-destructive transition-colors py-1"
+                  className="
+                    w-full
+                    text-xs
+                    text-muted-foreground
+                    hover:text-destructive
+                    transition-colors
+                    py-1
+                  "
                 >
-                  {isRtl ? 'مسح السلة' : 'Clear cart'}
+                  {isRtl ? "مسح السلة" : "Clear cart"}
                 </button>
               </div>
             )}
@@ -228,5 +621,5 @@ export default function CartDrawer() {
         </>
       )}
     </AnimatePresence>
-  )
+  );
 }
