@@ -43,7 +43,7 @@ export default page;
 //   ],
 // }
 
-// type Tab = 'overview' | 'favorites' | 'orders' | 'achievements' | 'settings'
+// type Tab = 'overview' | 'favorites' | 'orders' | 'achievements' | 'settingsss'
 
 // const TABS: { id: Tab; labelEn: string; labelAr: string; icon: React.ElementType }[] = [
 //   { id: 'overview',     labelEn: 'Overview',      labelAr: 'نظرة عامة',    icon: User },
