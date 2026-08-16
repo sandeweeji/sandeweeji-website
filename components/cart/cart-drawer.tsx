@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -14,59 +14,102 @@ import {
   MapPin,
   User,
   Phone,
+  Pencil,
+  Check,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 
 import { useCartStore } from "@/lib/cart-store";
 import { useLocaleStore } from "@/lib/locale-store";
 import { t } from "@/lib/i18n";
 import { RESTAURANT_SETTINGS } from "@/lib/data";
 import { formatPrice } from "@/lib/utils";
-import type { CartItem } from "@/lib/types";
-import { Input } from "@base-ui/react";
+
+import type { CartExtra } from "@/lib/types";
+
+/* =========================================================
+   Local cart types
+   CartItem is not exported from @/lib/types, so we define
+   the shape used by the cart store here.
+========================================================= */
+
+type CartItem = {
+  id: string;
+  productId: string;
+  nameEn: string;
+  nameAr: string;
+  price: number;
+  image: string;
+  quantity: number;
+  notes: string;
+  extras: CartExtra[];
+};
+
+/* =========================================================
+   Cart Item Row
+========================================================= */
 
 function CartItemRow({ item }: { item: CartItem }) {
-  const { updateQuantity, removeItem } = useCartStore();
+  const { updateQuantity, removeItem, updateNotes } = useCartStore();
   const { locale } = useLocaleStore();
 
-  const name = locale === "ar" ? item.nameAr : item.nameEn;
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [draftNotes, setDraftNotes] = useState(item.notes ?? "");
 
-  const itemTotal =
-    (item.price + item.extras.reduce((sum, extra) => sum + extra.price, 0)) *
-    item.quantity;
+  const name = locale === "ar" ? item.nameAr : item.nameEn || item.nameAr;
 
   const addedExtras = item.extras.filter((extra) => extra.type === "ADD");
 
   const removedExtras = item.extras.filter((extra) => extra.type === "REMOVE");
 
+  const extrasTotal = item.extras.reduce(
+    (sum: number, extra: CartExtra) => sum + Number(extra.price),
+    0,
+  );
+
+  const itemTotal = (Number(item.price) + extrasTotal) * item.quantity;
+
+  const saveNotes = () => {
+    updateNotes(item.id, draftNotes.trim());
+    setIsEditingNotes(false);
+  };
+
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, x: 40 }}
+      initial={{ opacity: 0, x: 30 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -40, height: 0 }}
-      transition={{ duration: 0.25 }}
-      className="py-4"
+      exit={{
+        opacity: 0,
+        x: -30,
+        height: 0,
+        marginBottom: 0,
+        paddingTop: 0,
+        paddingBottom: 0,
+      }}
+      transition={{ duration: 0.22 }}
+      className="py-4 border-b border-white/5 last:border-b-0"
     >
       <div className="flex gap-3">
-        {/* Image */}
-        <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface">
+        {/* Product image */}
+        <div className="relative w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-xl overflow-hidden shrink-0 bg-surface">
           <Image
             src={item.image}
             alt={name}
             fill
             className="object-cover"
-            sizes="64px"
+            sizes="72px"
           />
         </div>
 
-        {/* Content */}
+        {/* Main content */}
         <div className="flex-1 min-w-0">
-          {/* Product name */}
+          {/* Product name + delete */}
           <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-bold text-foreground leading-tight">
+            <p className="text-sm sm:text-[15px] font-bold text-foreground leading-snug wrap-break-word">
               {name}
             </p>
 
@@ -74,33 +117,47 @@ function CartItemRow({ item }: { item: CartItem }) {
               type="button"
               onClick={() => removeItem(item.id)}
               className="
-                p-1
+                shrink-0
+                p-1.5
                 rounded-lg
                 text-muted-foreground/50
                 hover:text-destructive
                 hover:bg-destructive/10
-                transition-colors
-                flex-shrink-0
+                active:scale-90
+                transition-all
               "
               aria-label={t("remove", locale)}
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
 
           {/* Added extras */}
           {addedExtras.length > 0 && (
-            <div className="mt-2 space-y-0.5">
-              {addedExtras.map((extra) => {
+            <div className="mt-2 space-y-1">
+              <p className="text-[11px] font-semibold text-primary/70">
+                {locale === "ar" ? "الإضافات" : "Add-ons"}
+              </p>
+
+              {addedExtras.map((extra: CartExtra) => {
                 const extraName =
-                  locale === "ar"
-                    ? extra.nameAr
-                    : (extra.nameEn ?? extra.nameAr);
+                  locale === "ar" ? extra.nameAr : extra.nameEn || extra.nameAr;
 
                 return (
-                  <p key={extra.id} className="text-xs text-primary/80">
-                    + {extraName}
-                  </p>
+                  <div
+                    key={extra.id}
+                    className="flex items-center justify-between gap-2"
+                  >
+                    <p className="text-xs text-primary/80 wrap-break-word">
+                      <span className="font-bold">+</span> {extraName}
+                    </p>
+
+                    {Number(extra.price) > 0 && (
+                      <span className="text-[11px] text-primary/60 shrink-0">
+                        +{formatPrice(Number(extra.price))}
+                      </span>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -108,16 +165,21 @@ function CartItemRow({ item }: { item: CartItem }) {
 
           {/* Removed ingredients */}
           {removedExtras.length > 0 && (
-            <div className="mt-1 space-y-0.5">
-              {removedExtras.map((extra) => {
+            <div className="mt-2 space-y-1">
+              <p className="text-[11px] font-semibold text-red-400/70">
+                {locale === "ar" ? "بدون مكونات" : "Without"}
+              </p>
+
+              {removedExtras.map((extra: CartExtra) => {
                 const extraName =
-                  locale === "ar"
-                    ? extra.nameAr
-                    : (extra.nameEn ?? extra.nameAr);
+                  locale === "ar" ? extra.nameAr : extra.nameEn || extra.nameAr;
 
                 return (
-                  <p key={extra.id} className="text-xs text-red-400/80">
-                    {locale === "ar" ? `بدون ${extraName}` : `No ${extraName}`}
+                  <p
+                    key={extra.id}
+                    className="text-xs text-red-400/80 wrap-break-word"
+                  >
+                    <span className="font-bold">−</span> {extraName}
                   </p>
                 );
               })}
@@ -125,14 +187,134 @@ function CartItemRow({ item }: { item: CartItem }) {
           )}
 
           {/* Notes */}
-          {item.notes && (
-            <p className="text-xs text-muted-foreground mt-1.5 italic break-words">
-              📝 {item.notes}
-            </p>
+          {isEditingNotes ? (
+            <div className="mt-3 space-y-2">
+              <Textarea
+                autoFocus
+                value={draftNotes}
+                onChange={(event) => setDraftNotes(event.target.value)}
+                placeholder={
+                  locale === "ar" ? "أضف ملاحظتك..." : "Add your note..."
+                }
+                rows={2}
+                className="
+                  min-h-[70px]
+                  bg-surface
+                  border-white/10
+                  text-foreground
+                  placeholder:text-muted-foreground/50
+                  focus:border-primary/50
+                  resize-none
+                  rounded-xl
+                  text-xs
+                "
+              />
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={saveNotes}
+                  className="
+                    flex-1
+                    h-8
+                    rounded-lg
+                    bg-primary
+                    text-primary-foreground
+                    text-xs
+                    font-semibold
+                    flex
+                    items-center
+                    justify-center
+                    gap-1.5
+                    hover:bg-primary/90
+                    transition-colors
+                  "
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  {locale === "ar" ? "حفظ" : "Save"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftNotes(item.notes ?? "");
+                    setIsEditingNotes(false);
+                  }}
+                  className="
+                    h-8
+                    px-3
+                    rounded-lg
+                    bg-surface
+                    border
+                    border-white/10
+                    text-muted-foreground
+                    text-xs
+                    font-semibold
+                    hover:text-foreground
+                    transition-colors
+                  "
+                >
+                  {locale === "ar" ? "إلغاء" : "Cancel"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-2">
+              {item.notes?.trim() ? (
+                <div className="flex items-start gap-2">
+                  <p className="flex-1 min-w-0 text-xs text-muted-foreground italic wrap-break-word">
+                    📝 {item.notes}
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDraftNotes(item.notes ?? "");
+                      setIsEditingNotes(true);
+                    }}
+                    className="
+                      shrink-0
+                      p-1
+                      rounded-md
+                      text-muted-foreground/60
+                      hover:text-primary
+                      hover:bg-primary/10
+                      transition-colors
+                    "
+                    aria-label={
+                      locale === "ar" ? "تعديل الملاحظة" : "Edit note"
+                    }
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftNotes("");
+                    setIsEditingNotes(true);
+                  }}
+                  className="
+                    flex
+                    items-center
+                    gap-1.5
+                    text-[11px]
+                    text-muted-foreground/60
+                    hover:text-primary
+                    transition-colors
+                  "
+                >
+                  <Pencil className="w-3 h-3" />
+                  {locale === "ar" ? "إضافة ملاحظة" : "Add note"}
+                </button>
+              )}
+            </div>
           )}
 
-          {/* Quantity + Price */}
+          {/* Quantity + price */}
           <div className="flex items-center justify-between gap-3 mt-3">
+            {/* Quantity */}
             <div className="flex items-center gap-2">
               <motion.button
                 type="button"
@@ -147,14 +329,15 @@ function CartItemRow({ item }: { item: CartItem }) {
                   text-foreground/70
                   hover:text-foreground
                   hover:border-primary/40
+                  active:bg-primary/10
                   transition-colors
                 "
-                aria-label="Decrease"
+                aria-label="Decrease quantity"
               >
                 <Minus className="w-3 h-3" />
               </motion.button>
 
-              <span className="text-sm font-semibold w-5 text-center text-foreground">
+              <span className="text-sm font-bold w-5 text-center text-foreground">
                 {item.quantity}
               </span>
 
@@ -171,15 +354,17 @@ function CartItemRow({ item }: { item: CartItem }) {
                   text-foreground/70
                   hover:text-foreground
                   hover:border-primary/40
+                  active:bg-primary/10
                   transition-colors
                 "
-                aria-label="Increase"
+                aria-label="Increase quantity"
               >
                 <Plus className="w-3 h-3" />
               </motion.button>
             </div>
 
-            <span className="text-sm font-bold text-primary whitespace-nowrap">
+            {/* Item price */}
+            <span className="text-sm font-extrabold text-primary whitespace-nowrap">
               {formatPrice(itemTotal)}
             </span>
           </div>
@@ -188,6 +373,10 @@ function CartItemRow({ item }: { item: CartItem }) {
     </motion.div>
   );
 }
+
+/* =========================================================
+   Cart Drawer
+========================================================= */
 
 export default function CartDrawer() {
   const { items, isOpen, closeCart, clearCart, subtotal } = useCartStore();
@@ -202,66 +391,124 @@ export default function CartDrawer() {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
 
+  /*
+   * Prevent the page behind the drawer from scrolling.
+   * This is important on mobile where the drawer can otherwise
+   * scroll the underlying document.
+   */
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.touchAction = originalTouchAction;
+    };
+  }, [isOpen]);
+
+  /*
+   * Also clear errors when the user starts entering the
+   * required address.
+   */
+  const canSubmit = useMemo(
+    () => address.trim().length > 0 && items.length > 0,
+    [address, items.length],
+  );
+
   const handleWhatsAppOrder = () => {
     const cleanAddress = address.trim();
 
+    /*
+     * Address is the ONLY required customer field.
+     */
     if (!cleanAddress) {
       setError(
         isRtl
-          ? "يرجى إدخال عنوان التوصيل"
+          ? "يرجى إدخال عنوان التوصيل."
           : "Please enter your delivery address.",
       );
       return;
     }
 
-    if (!name.trim() && !phone.trim()) {
+    if (!name.trim()) {
+      setError(isRtl ? "يرجى إدخال الاسم." : "Please enter your name .");
+      return;
+    }
+
+    if (!phone.trim()) {
       setError(
-        isRtl
-          ? "يرجى إدخال الاسم أو رقم الهاتف"
-          : "Please enter your name or phone number.",
+        isRtl ? "يرجى إدخال رقم الهاتف." : "Please enter your phone number.",
       );
+      return;
+    }
+
+    if (items.length === 0) {
       return;
     }
 
     setError("");
 
-    let message = isRtl
-      ? "مرحباً، أريد طلب:\n"
-      : "Hello, I would like to place an order:\n";
+    let message =
+      locale === "ar"
+        ? "مرحباً، أريد طلب:\n"
+        : "Hello, I would like to place an order:\n";
 
-    items.forEach((item) => {
-      const itemName = locale === "ar" ? item.nameAr : item.nameEn;
+    items.forEach((item: CartItem) => {
+      const itemName =
+        locale === "ar" ? item.nameAr : item.nameEn || item.nameAr;
 
-      const addedExtras = item.extras.filter((extra) => extra.type === "ADD");
+      const addedExtras = item.extras.filter(
+        (extra: CartExtra) => extra.type === "ADD",
+      );
 
       const removedExtras = item.extras.filter(
-        (extra) => extra.type === "REMOVE",
+        (extra: CartExtra) => extra.type === "REMOVE",
       );
 
       message += `\n• ${item.quantity}x ${itemName}`;
 
+      /*
+       * Add-ons
+       *
+       * IMPORTANT:
+       * No IDs are included in the WhatsApp message.
+       * The restaurant receives human-readable names only.
+       */
       if (addedExtras.length > 0) {
-        message += locale === "ar" ? "\n  إضافات:" : "\n  Add-ons:";
+        message += locale === "ar" ? "\n  الإضافات:" : "\n  Add-ons:";
 
-        addedExtras.forEach((extra) => {
+        addedExtras.forEach((extra: CartExtra) => {
           const extraName =
-            locale === "ar" ? extra.nameAr : (extra.nameEn ?? extra.nameAr);
+            locale === "ar" ? extra.nameAr : extra.nameEn || extra.nameAr;
 
           message += `\n  + ${extraName}`;
         });
       }
 
+      /*
+       * Removed ingredients
+       *
+       * Again: names only, never database IDs.
+       */
       if (removedExtras.length > 0) {
         message += locale === "ar" ? "\n  بدون:" : "\n  Without:";
 
-        removedExtras.forEach((extra) => {
+        removedExtras.forEach((extra: CartExtra) => {
           const extraName =
-            locale === "ar" ? extra.nameAr : (extra.nameEn ?? extra.nameAr);
+            locale === "ar" ? extra.nameAr : extra.nameEn || extra.nameAr;
 
           message += `\n  - ${extraName}`;
         });
       }
 
+      /*
+       * Notes
+       */
       if (item.notes?.trim()) {
         message +=
           locale === "ar"
@@ -272,21 +519,33 @@ export default function CartDrawer() {
       message += "\n";
     });
 
+    /*
+     * Total
+     */
     message +=
       locale === "ar"
         ? `\nالمجموع: ${formatPrice(total)}`
         : `\nTotal: ${formatPrice(total)}`;
 
+    /*
+     * Address — required
+     */
     message +=
       locale === "ar"
-        ? `\nالعنوان: ${cleanAddress}`
+        ? `\nعنوان التوصيل: ${cleanAddress}`
         : `\nDelivery address: ${cleanAddress}`;
 
+    /*
+     * Name — optional
+     */
     if (name.trim()) {
       message +=
         locale === "ar" ? `\nالاسم: ${name.trim()}` : `\nName: ${name.trim()}`;
     }
 
+    /*
+     * Phone — optional
+     */
     if (phone.trim()) {
       message +=
         locale === "ar"
@@ -298,9 +557,8 @@ export default function CartDrawer() {
 
     const phoneNumber = RESTAURANT_SETTINGS.whatsappNumber.replace(/\D/g, "");
 
-    const waUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
-      message,
-    )}`;
+    const waUrl =
+      `https://wa.me/${phoneNumber}` + `?text=${encodeURIComponent(message)}`;
 
     window.open(waUrl, "_blank", "noopener,noreferrer");
   };
@@ -309,17 +567,28 @@ export default function CartDrawer() {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* =================================================
+              Backdrop
+          ================================================= */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeCart}
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+            className="
+              fixed
+              inset-0
+              z-[60]
+              bg-black/70
+              backdrop-blur-sm
+              touch-none
+            "
           />
 
-          {/* Drawer */}
-          <motion.div
+          {/* =================================================
+              Drawer
+          ================================================= */}
+          <motion.aside
             initial={{
               x: isRtl ? "-100%" : "100%",
             }}
@@ -334,28 +603,68 @@ export default function CartDrawer() {
             }}
             className={`
               fixed
-              top-0 bottom-0
-              z-50
+              inset-y-0
+              z-[70]
               w-full
-              max-w-md
-              flex flex-col
-              bg-card/95
-              backdrop-blur-xl
-              border-white/5
+              sm:max-w-md
+              flex
+              flex-col
+              overflow-hidden
+              bg-card
               shadow-2xl
               ${isRtl ? "left-0 border-r" : "right-0 border-l"}
+              border-white/10
             `}
+            style={{
+              height: "100dvh",
+              maxHeight: "100dvh",
+              overscrollBehavior: "contain",
+            }}
             dir={isRtl ? "rtl" : "ltr"}
+            onWheel={(event) => {
+              event.stopPropagation();
+            }}
+            onTouchMove={(event) => {
+              event.stopPropagation();
+            }}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 sm:px-6 py-4 sm:py-5 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center">
+            {/* =================================================
+                Header
+            ================================================= */}
+            <div
+              className="
+                shrink-0
+                flex
+                items-center
+                justify-between
+                px-4
+                sm:px-6
+                py-4
+                border-b
+                border-white/10
+                bg-card
+              "
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className="
+                    w-10
+                    h-10
+                    rounded-xl
+                    bg-primary/15
+                    border
+                    border-primary/20
+                    flex
+                    items-center
+                    justify-center
+                    shrink-0
+                  "
+                >
                   <ShoppingBag className="w-5 h-5 text-primary" />
                 </div>
 
-                <div>
-                  <h2 className="text-base font-bold text-foreground">
+                <div className="min-w-0">
+                  <h2 className="text-base sm:text-lg font-extrabold text-foreground">
                     {t("yourCart", locale)}
                   </h2>
 
@@ -369,80 +678,148 @@ export default function CartDrawer() {
                 type="button"
                 onClick={closeCart}
                 className="
+                  shrink-0
                   p-2
-                  rounded-lg
-                  hover:bg-white/5
+                  rounded-xl
                   text-muted-foreground
                   hover:text-foreground
-                  transition-colors
+                  hover:bg-white/5
+                  active:scale-90
+                  transition-all
                 "
-                aria-label="Close cart"
+                aria-label={locale === "ar" ? "إغلاق السلة" : "Close cart"}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto px-5 sm:px-6 scrollbar-hide">
+            {/* =================================================
+                Scrollable content
+            ================================================= */}
+            <div
+              className="
+                flex-1
+                min-h-0
+                overflow-y-auto
+                overscroll-contain
+                px-4
+                sm:px-6
+                scrollbar-hide
+              "
+              style={{
+                WebkitOverflowScrolling: "touch",
+                overscrollBehavior: "contain",
+              }}
+            >
               {items.length === 0 ? (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{
+                    opacity: 0,
+                    y: 20,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
                   className="
-                    flex flex-col
+                    flex
+                    flex-col
                     items-center
                     justify-center
-                    h-full
+                    min-h-full
                     gap-4
                     py-16
+                    text-center
                   "
                 >
-                  <div className="w-20 h-20 rounded-2xl bg-surface border border-white/10 flex items-center justify-center">
+                  <div
+                    className="
+                      w-20
+                      h-20
+                      rounded-2xl
+                      bg-surface
+                      border
+                      border-white/10
+                      flex
+                      items-center
+                      justify-center
+                    "
+                  >
                     <ShoppingBag className="w-10 h-10 text-muted-foreground/40" />
                   </div>
 
-                  <div className="text-center">
-                    <p className="text-base font-semibold text-foreground">
+                  <div>
+                    <p className="text-base font-bold text-foreground">
                       {t("cartEmpty", locale)}
                     </p>
 
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-sm text-muted-foreground mt-1 max-w-xs">
                       {t("cartEmptyDesc", locale)}
                     </p>
                   </div>
 
                   <Button
+                    type="button"
                     onClick={closeCart}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl"
+                    className="
+                      bg-primary
+                      text-primary-foreground
+                      hover:bg-primary/90
+                      rounded-xl
+                      px-5
+                    "
                   >
                     {t("browseMenu", locale)}
-                    <ArrowRight className="w-4 h-4 ml-2" />
+
+                    <ArrowRight
+                      className={`
+                        w-4 h-4
+                        ${isRtl ? "mr-2 rotate-180" : "ml-2"}
+                      `}
+                    />
                   </Button>
                 </motion.div>
               ) : (
                 <AnimatePresence mode="popLayout">
-                  {items.map((item) => (
+                  {items.map((item: CartItem) => (
                     <CartItemRow key={item.id} item={item} />
                   ))}
                 </AnimatePresence>
               )}
             </div>
 
-            {/* Footer */}
+            {/* =================================================
+                Footer
+                This section stays visible while cart items
+                scroll independently.
+            ================================================= */}
             {items.length > 0 && (
-              <div className="px-5 sm:px-6 py-4 sm:py-5 border-t border-white/10 space-y-4 max-h-[48vh] overflow-y-auto">
-                {/* Delivery information */}
+              <div
+                className="
+                  shrink-0
+                  border-t
+                  border-white/10
+                  bg-card
+                  px-4
+                  sm:px-6
+                  pt-4
+                  pb-[max(1rem,env(safe-area-inset-bottom))]
+                "
+              >
+                {/* Delivery section */}
                 <div className="space-y-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-foreground">
-                      {isRtl ? "معلومات التوصيل" : "Delivery information"}
-                    </h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm sm:text-[15px] font-extrabold text-foreground">
+                        {isRtl ? "معلومات التوصيل" : "Delivery information"}
+                      </h3>
 
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {isRtl
-                        ? "العنوان إلزامي، والاسم ورقم الهاتف اختياريان."
-                        : "Address is required. Name and phone are optional."}
-                    </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {isRtl
+                          ? "العنوان مطلوب، الاسم والهاتف اختياريان"
+                          : "Address is required. Name and phone are optional."}
+                      </p>
+                    </div>
                   </div>
 
                   {/* Address */}
@@ -452,146 +829,214 @@ export default function CartDrawer() {
                         absolute
                         top-3.5
                         ${isRtl ? "right-3" : "left-3"}
-                        w-4 h-4
+                        w-4
+                        h-4
                         text-primary
                         pointer-events-none
+                        z-10
                       `}
                     />
 
-                    <Input
+                    <input
+                      type="text"
                       value={address}
-                      onChange={(e) => {
-                        setAddress(e.target.value);
-                        if (error) setError("");
+                      onChange={(event) => {
+                        setAddress(event.target.value);
+
+                        if (error) {
+                          setError("");
+                        }
                       }}
                       placeholder={
                         isRtl ? "عنوان التوصيل *" : "Delivery address *"
                       }
+                      required
                       className={`
+                        w-full
                         h-11
+                        rounded-xl
                         bg-surface
-                        border-white/10
+                        border
                         text-foreground
+                        text-sm
+                        outline-none
                         placeholder:text-muted-foreground/50
                         focus:border-primary/50
-                        ${isRtl ? "pr-10" : "pl-10"}
+                        focus:ring-1
+                        focus:ring-primary/20
+                        transition-all
+                        ${isRtl ? "pr-10 pl-3" : "pl-10 pr-3"}
                       `}
                     />
                   </div>
 
-                  {/* Optional name + phone */}
+                  {/* Name + phone */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {/* Name */}
                     <div className="relative">
                       <User
                         className={`
                           absolute
                           top-3.5
                           ${isRtl ? "right-3" : "left-3"}
-                          w-4 h-4
+                          w-4
+                          h-4
                           text-muted-foreground
+                          
                           pointer-events-none
+                          z-10
                         `}
                       />
 
-                      <Input
+                      <input
+                        type="text"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(event) => setName(event.target.value)}
                         placeholder={
-                          isRtl ? "الاسم (اختياري)" : "Name (optional)"
+                          isRtl ? "الاسم (مطلوب)" : "Name (required)"
                         }
                         className={`
+                          w-full
                           h-11
+                          rounded-xl
                           bg-surface
+                          border
                           border-white/10
                           text-foreground
+                          text-sm
+                          outline-none
                           placeholder:text-muted-foreground/50
                           focus:border-primary/50
-                          ${isRtl ? "pr-10" : "pl-10"}
+                          focus:ring-1
+                          focus:ring-primary/20
+                          transition-all
+                          ${isRtl ? "pr-10 pl-3" : "pl-10 pr-3"}
                         `}
                       />
                     </div>
 
+                    {/* Phone */}
                     <div className="relative">
                       <Phone
                         className={`
                           absolute
                           top-3.5
                           ${isRtl ? "right-3" : "left-3"}
-                          w-4 h-4
+                          w-4
+                          h-4
                           text-muted-foreground
                           pointer-events-none
+                          z-10
                         `}
                       />
 
-                      <Input
+                      <input
                         type="tel"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={(event) => setPhone(event.target.value)}
                         placeholder={
-                          isRtl ? "الهاتف (اختياري)" : "Phone (optional)"
+                          isRtl ? "الهاتف (مطلوب)" : "Phone (required)"
                         }
                         className={`
+                          w-full
                           h-11
+                          rounded-xl
                           bg-surface
+                          border
                           border-white/10
                           text-foreground
+                          text-sm
+                          outline-none
                           placeholder:text-muted-foreground/50
                           focus:border-primary/50
-                          ${isRtl ? "pr-10" : "pl-10"}
+                          focus:ring-1
+                          focus:ring-primary/20
+                          transition-all
+                          ${isRtl ? "pr-10 pl-3" : "pl-10 pr-3"}
                         `}
                       />
                     </div>
                   </div>
 
-                  {error && (
-                    <p className="text-xs text-red-400 font-medium">{error}</p>
-                  )}
+                  {/* Error */}
+                  <AnimatePresence>
+                    {error && (
+                      <motion.p
+                        initial={{
+                          opacity: 0,
+                          height: 0,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          height: "auto",
+                        }}
+                        exit={{
+                          opacity: 0,
+                          height: 0,
+                        }}
+                        className="text-xs font-semibold text-red-400"
+                      >
+                        {error}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
                 </div>
 
+                {/* Divider */}
+                <Separator className="my-3 bg-white/5" />
+
                 {/* Totals */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
                       {t("subtotal", locale)}
                     </span>
 
-                    <span className="text-foreground font-medium">
+                    <span className="font-semibold text-foreground">
                       {formatPrice(total)}
                     </span>
                   </div>
 
-                  <Separator className="bg-white/5" />
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-base font-bold text-foreground">
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-base font-extrabold text-foreground">
                       {t("total", locale)}
                     </span>
 
-                    <span className="text-xl font-bold text-primary">
+                    <span className="text-xl font-extrabold text-primary">
                       {formatPrice(total)}
                     </span>
                   </div>
                 </div>
 
-                {/* WhatsApp */}
+                {/* WhatsApp CTA */}
                 <motion.button
                   type="button"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{
+                    scale: canSubmit ? 1.01 : 1,
+                  }}
+                  whileTap={{
+                    scale: canSubmit ? 0.98 : 1,
+                  }}
                   onClick={handleWhatsAppOrder}
                   className="
                     w-full
-                    py-3.5 sm:py-4
+                    mt-4
+                    h-12
+                    sm:h-13
                     rounded-xl
                     bg-[#25D366]
                     text-white
-                    font-bold
-                    text-sm sm:text-base
-                    flex items-center
+                    font-extrabold
+                    text-sm
+                    sm:text-base
+                    flex
+                    items-center
                     justify-center
-                    gap-3
+                    gap-2.5
                     shadow-lg
+                    shadow-black/10
                     hover:bg-[#1ebe5d]
+                    active:bg-[#19ad54]
                     transition-colors
                   "
                 >
@@ -606,18 +1051,20 @@ export default function CartDrawer() {
                   onClick={clearCart}
                   className="
                     w-full
-                    text-xs
-                    text-muted-foreground
+                    mt-2
+                    py-1.5
+                    text-[11px]
+                    font-medium
+                    text-muted-foreground/70
                     hover:text-destructive
                     transition-colors
-                    py-1
                   "
                 >
                   {isRtl ? "مسح السلة" : "Clear cart"}
                 </button>
               </div>
             )}
-          </motion.div>
+          </motion.aside>
         </>
       )}
     </AnimatePresence>
