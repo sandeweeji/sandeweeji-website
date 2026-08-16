@@ -95,7 +95,9 @@ export default function HeroSection() {
                     <span className="text-primary block sm:inline-block sm:ms-3 mb-4 sm:mb-0">
                       سمّينا ساندويجي
                     </span>
-                    <span className="block sm:inline-block">شان ترجع تيجي</span>
+                    <span className="block sm:inline-block">
+                      مشان تاكل و ترجع تيجي
+                    </span>
                   </>
                 ) : (
                   <>
