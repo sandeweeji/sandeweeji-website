@@ -9,6 +9,7 @@ import { t } from "@/lib/i18n";
 import { formatPrice } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 import { BADGE_MAP } from "@/lib/data";
+import sandeweeji from "@/public/sandeweeji.jpg";
 interface Props {
   product: Product;
   onOpenModal: (product: Product) => void;
@@ -88,7 +89,7 @@ export default function ProductCard({ product, onOpenModal }: Props) {
       {/* Image */}
       <div className="relative h-44 overflow-hidden bg-surface">
         <Image
-          src={product.image}
+          src={product.image || sandeweeji}
           alt={name}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"

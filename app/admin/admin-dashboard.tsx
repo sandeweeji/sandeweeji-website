@@ -42,6 +42,7 @@ import CategoryFormModal, {
   type CategoryFormPayload,
 } from "@/components/admin/category-form-modal";
 import ConfirmDialog from "@/components/admin/confirm-dialog";
+import sandeweeji from "@/public/sandeweeji.jpg";
 
 /* -------------------------------------------------------------------------- */
 /* API response types                                                         */
@@ -595,7 +596,11 @@ export default function AdminPage() {
                                 <div className="flex items-center gap-3">
                                   <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-surface shrink-0">
                                     <Image
-                                      src={product.image}
+                                      src={
+                                        product.image
+                                          ? product.image
+                                          : sandeweeji
+                                      }
                                       alt={product.nameAr}
                                       fill
                                       className="object-cover"

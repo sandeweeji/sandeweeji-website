@@ -22,9 +22,15 @@ export default function Navbar() {
 
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const totalItems = useCartStore((s) => s.totalItems());
   const toggleCart = useCartStore((s) => s.toggleCart);
+
+  // Prevent Zustand/localStorage state from causing SSR hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const handler = () => {
@@ -72,7 +78,7 @@ export default function Navbar() {
         {/* Bottom gradient accent */}
         <div
           className={cn(
-            "absolute bottom-0 left-0 right-0 h-[1px] justify-between ",
+            "absolute bottom-0 left-0 right-0 h-[1px]",
             "bg-gradient-to-r",
             "from-transparent",
             "via-primary/70",
@@ -133,11 +139,10 @@ export default function Navbar() {
                   >
                     <span className="relative z-10">{link.keyAr}</span>
 
-                    {/* Active underline */}
                     {isActive && (
                       <motion.div
                         layoutId="nav-active"
-                        className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-gradient-to-r from-primary/40 via-primary to-primary/40 font-bold"
+                        className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-gradient-to-r from-primary/40 via-primary to-primary/40"
                         transition={{
                           type: "spring",
                           stiffness: 380,
@@ -184,7 +189,7 @@ export default function Navbar() {
 
                 {/* Cart badge */}
                 <AnimatePresence>
-                  {totalItems > 0 && (
+                  {mounted && totalItems > 0 && (
                     <motion.span
                       key="badge"
                       initial={{
@@ -343,7 +348,7 @@ export default function Navbar() {
                     />
                   </Link>
 
-                  {/* ONLY MOBILE CLOSE BUTTON */}
+                  {/* Mobile close button */}
                   <button
                     onClick={() => setMobileOpen(false)}
                     aria-label="إغلاق القائمة"
@@ -443,7 +448,7 @@ export default function Navbar() {
 
                   <span className="relative z-10">السلة</span>
 
-                  {totalItems > 0 && (
+                  {mounted && totalItems > 0 && (
                     <span className="relative z-10 min-w-5 h-5 px-1 rounded-full bg-white/20 text-xs flex items-center justify-center">
                       {totalItems}
                     </span>
