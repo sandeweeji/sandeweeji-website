@@ -93,7 +93,7 @@ export default function HeroSection() {
                 {isRtl ? (
                   <>
                     <span className="text-primary block sm:inline-block sm:ms-3 mb-4 sm:mb-0">
-                      سمينا ساندويجي
+                      سمّينا ساندويجي
                     </span>
                     <span className="block sm:inline-block">شان ترجع تيجي</span>
                   </>

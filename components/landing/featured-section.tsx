@@ -128,7 +128,7 @@ export default function FeaturedSection() {
                 ease: [0.16, 1, 0.3, 1],
               }}
             >
-              <div
+              {/* <div
                 className="
                   mb-3
                   flex
@@ -145,7 +145,7 @@ export default function FeaturedSection() {
                 <Sparkles className="h-4 w-4" />
 
                 {isRtl ? "اختياراتنا المميزة" : "Our Selection"}
-              </div>
+              </div> */}
 
               <h2
                 className="
