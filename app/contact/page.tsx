@@ -10,14 +10,12 @@ import {
 } from "lucide-react";
 import { useLocaleStore } from "@/lib/locale-store";
 import { t } from "@/lib/i18n";
-import { RESTAURANT_SETTINGS } from "@/lib/data";
+import { RESTAURANT_SETTINGS, waUrl, mapsUrl } from "@/lib/data";
 
 export default function ContactPage() {
   const { locale } = useLocaleStore();
   const isRtl = locale === "ar";
   const phone = RESTAURANT_SETTINGS.whatsappNumber.replace(/[^0-9]/g, "");
-  const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent("Hello Sandweeji! 👋\n\nI'd like to place an order.")}`;
-  const mapsUrl = "https://maps.app.goo.gl/QmL3uyg5kTbuKqHFA";
 
   const channels = [
     {
@@ -124,7 +122,7 @@ export default function ContactPage() {
                   whileHover={{ y: -3 }}
                   className={`group bg-card border border-white/5 rounded-2xl p-6 flex items-center gap-5 transition-all ${cls}`}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-surface border border-white/10 flex items-center justify-center flex-shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-surface border border-white/10 flex items-center justify-center shrink-0">
                     <Icon className={`w-6 h-6 ${iconCls}`} />
                   </div>
                   <div className="flex-1 min-w-0">

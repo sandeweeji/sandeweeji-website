@@ -10,7 +10,8 @@ export type Badge =
   | "spicy"
   | "meal"
   | "bestseller"
-  | "limited";
+  | "limited"
+  | "featured";
 
 export type ExtraType = "ADD" | "REMOVE";
 
@@ -67,4 +68,13 @@ export interface Product {
   extras: Extra[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Review {
+  id: string;
+  authorName: string;
+  rating: number;
+  textEn: string | null;
+  textAr: string;
+  date: string;
 }

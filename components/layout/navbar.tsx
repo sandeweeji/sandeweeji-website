@@ -1,14 +1,12 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, Menu, X, Globe, User, ChefHat } from "lucide-react";
-import { Button } from "@/components/ui/button";
-// import { Badge } from '@/components/ui/badge'
+import { ShoppingCart, Menu, X, ChefHat } from "lucide-react";
+
 import { useCartStore } from "@/lib/cart-store";
-import { useLocaleStore } from "@/lib/locale-store";
-import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -20,91 +18,138 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const pathname = usePathname();
+
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
   const totalItems = useCartStore((s) => s.totalItems());
   const toggleCart = useCartStore((s) => s.toggleCart);
 
-  /* English / Dynamic Locale switching disabled — Fixed to Arabic & RTL */
-  // const { locale, toggleLocale } = useLocaleStore();
-  const locale = "ar";
-  const isRtl = true;
-
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
+    const handler = () => {
+      setScrolled(window.scrollY > 20);
+    };
+
+    handler();
+
     window.addEventListener("scroll", handler, { passive: true });
+
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
   return (
     <>
+      {/* =========================
+          NAVBAR
+      ========================== */}
       <motion.header
         initial={{ y: -80 }}
         animate={{ y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
+        transition={{
+          duration: 0.45,
+          ease: [0.22, 1, 0.36, 1],
+        }}
         className={cn(
-          "fixed top-0 inset-x-0 z-50 transition-all duration-300",
+          "fixed top-0 inset-x-0 z-50",
+          "transition-all duration-300",
+          "border-b",
           scrolled
-            ? "glass-strong border-b border-white/5 shadow-2xl"
-            : "bg-transparent",
+            ? [
+                "bg-background/85",
+                "backdrop-blur-xl",
+                "border-primary/20",
+                "shadow-[0_10px_35px_rgba(0,0,0,0.18)]",
+              ]
+            : ["bg-background/55", "backdrop-blur-md", "border-white/10"],
         )}
         dir="rtl"
       >
+        {/* Bottom gradient accent */}
+        <div
+          className={cn(
+            "absolute bottom-0 left-0 right-0 h-[1px]",
+            "bg-gradient-to-r",
+            "from-transparent",
+            "via-primary/70",
+            "to-transparent",
+            "transition-opacity duration-300",
+            scrolled ? "opacity-100" : "opacity-50",
+          )}
+        />
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 lg:h-20">
-            {/* Logo */}
+          <div className="flex items-center justify-between h-16 lg:h-[72px]">
+            {/* =========================
+                LOGO
+            ========================== */}
             <Link
               href="/"
               className="flex items-center gap-2.5 group flex-shrink-0"
             >
               <motion.div
-                whileHover={{ rotate: 15 }}
-                transition={{ type: "spring", stiffness: 400 }}
-                className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-lg glow-brand-sm"
+                whileHover={{
+                  rotate: 8,
+                  scale: 1.04,
+                }}
+                whileTap={{ scale: 0.95 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 20,
+                }}
+                className="relative w-9 h-9 lg:w-10 lg:h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-lg"
               >
-                <ChefHat className="w-5 h-5 text-primary-foreground" />
+                {/* Restaurant gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary via-orange-500 to-red-600" />
+
+                <ChefHat className="relative z-10 w-5 h-5 text-white" />
+
+                {/* Shine */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
               </motion.div>
+
               <div className="flex flex-col leading-none">
-                <span className="font-bold text-lg text-foreground tracking-tight">
+                <span className="font-bold text-lg lg:text-xl text-foreground tracking-tight">
                   ساندويجي
                 </span>
-                {/* <span
-                  className="text-xs text-primary font-medium tracking-widest"
-                  style={{ fontFamily: "serif" }}
-                >
-                  Sandweeji
-                </span> */}
+
+                <span className="text-[9px] lg:text-[10px] text-primary/80 font-medium tracking-[0.2em] mt-1">
+                  SANDWEEJI
+                </span>
               </div>
             </Link>
 
-            {/* Desktop Nav */}
+            {/* =========================
+                DESKTOP NAVIGATION
+            ========================== */}
             <nav className="hidden lg:flex items-center gap-1">
               {NAV_LINKS.map((link) => {
                 const isActive = pathname === link.href;
-                // Always select Arabic label
-                const label = link.keyAr;
-                // const label = isRtl ? link.keyAr : link.keyEn;
 
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
                     className={cn(
-                      "relative px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200",
+                      "relative px-4 py-2.5",
+                      "text-sm",
+                      "transition-colors duration-200",
                       isActive
-                        ? "text-primary"
-                        : "text-foreground/70 hover:text-foreground hover:bg-white/5",
+                        ? "text-primary font-bold"
+                        : "text-foreground/65 hover:text-foreground font-bold",
                     )}
                   >
+                    <span className="relative z-10">{link.keyAr}</span>
+
+                    {/* Active underline */}
                     {isActive && (
                       <motion.div
                         layoutId="nav-active"
-                        className="absolute inset-0 rounded-lg bg-primary/10 border border-primary/20"
+                        className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-gradient-to-r from-primary/40 via-primary to-primary/40 font-bold"
                         transition={{
                           type: "spring",
                           stiffness: 380,
@@ -112,49 +157,81 @@ export default function Navbar() {
                         }}
                       />
                     )}
-                    <span className="relative z-10">{label}</span>
                   </Link>
                 );
               })}
             </nav>
 
-            {/* Right Actions */}
+            {/* =========================
+                ACTIONS
+            ========================== */}
             <div className="flex items-center gap-2">
-              {/* Language Toggle (Disabled for Arabic-only mode) */}
-              {/* <motion.button
-                whileTap={{ scale: 0.92 }}
-                onClick={toggleLocale}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
-              >
-                <Globe className="w-4 h-4" />
-                <span>{locale === "en" ? "AR" : "EN"}</span>
-              </motion.button> */}
-
-              {/* Profile 
-              <Link href="/profile">
-                <motion.button
-                  whileTap={{ scale: 0.92 }}
-                  className="hidden sm:flex p-2 rounded-lg text-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
-                >
-                  <User className="w-5 h-5" />
-                </motion.button>
-              </Link> */}
-
-              {/* Cart */}
+              {/* =========================
+                  CART
+              ========================== */}
               <motion.button
+                whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.92 }}
                 onClick={toggleCart}
-                className="relative p-2.5 rounded-xl bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors glow-brand-sm"
+                aria-label="فتح السلة"
+                className={cn(
+                  "relative",
+                  "w-10 h-10 lg:w-11 lg:h-11",
+                  "rounded-xl",
+                  "flex items-center justify-center",
+                  "overflow-visible",
+                  "shadow-lg",
+                  "transition-all duration-300",
+                  "hover:shadow-primary/30",
+                  "group",
+                )}
               >
-                <ShoppingBag className="w-5 h-5" />
+                {/* Cart gradient */}
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary via-orange-500 to-red-600" />
+
+                {/* Inner highlight */}
+                <div className="absolute inset-[1px] rounded-[11px] bg-gradient-to-br from-white/15 via-transparent to-black/10" />
+
+                <ShoppingCart className="relative z-10 w-5 h-5 text-white transition-transform duration-300 group-hover:-rotate-3" />
+
+                {/* Cart badge */}
                 <AnimatePresence>
                   {totalItems > 0 && (
                     <motion.span
                       key="badge"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                      className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full bg-destructive text-white text-xs font-bold"
+                      initial={{
+                        scale: 0,
+                        opacity: 0,
+                      }}
+                      animate={{
+                        scale: 1,
+                        opacity: 1,
+                      }}
+                      exit={{
+                        scale: 0,
+                        opacity: 0,
+                      }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 25,
+                      }}
+                      className={cn(
+                        "absolute",
+                        "-top-2",
+                        "-right-2",
+                        "min-w-[20px]",
+                        "h-5",
+                        "px-1",
+                        "flex items-center justify-center",
+                        "rounded-full",
+                        "bg-red-600",
+                        "border-2 border-background",
+                        "text-white",
+                        "text-[10px]",
+                        "font-bold",
+                        "shadow-md",
+                      )}
                     >
                       {totalItems}
                     </motion.span>
@@ -162,89 +239,245 @@ export default function Navbar() {
                 </AnimatePresence>
               </motion.button>
 
-              {/* Mobile Menu Toggle */}
-              <button
-                onClick={() => setMobileOpen((v) => !v)}
-                className="lg:hidden p-2 rounded-lg text-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
-                aria-label="فتح القائمة"
-              >
-                {mobileOpen ? (
-                  <X className="w-5 h-5" />
-                ) : (
-                  <Menu className="w-5 h-5" />
+              {/* =========================
+                  MOBILE MENU BUTTON
+                  Only exists when drawer
+                  is CLOSED.
+              ========================== */}
+              <AnimatePresence mode="wait" initial={false}>
+                {!mobileOpen && (
+                  <motion.button
+                    key="menu-button"
+                    initial={{
+                      opacity: 0,
+                      scale: 0.85,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      scale: 1,
+                    }}
+                    exit={{
+                      opacity: 0,
+                      scale: 0.85,
+                    }}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={() => setMobileOpen(true)}
+                    aria-label="فتح القائمة"
+                    aria-expanded={false}
+                    className={cn(
+                      "lg:hidden",
+                      "w-10 h-10",
+                      "rounded-xl",
+                      "flex items-center justify-center",
+                      "text-foreground/70",
+                      "hover:text-foreground",
+                      "hover:bg-white/5",
+                      "transition-colors",
+                    )}
+                  >
+                    <Menu className="w-5 h-5" />
+                  </motion.button>
                 )}
-              </button>
+              </AnimatePresence>
             </div>
           </div>
         </div>
       </motion.header>
 
-      {/* Mobile Drawer */}
+      {/* =========================
+          MOBILE DRAWER
+      ========================== */}
       <AnimatePresence>
         {mobileOpen && (
           <>
+            {/* Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileOpen(false)}
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
             />
+
+            {/* Drawer */}
             <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 300, damping: 35 }}
-              className="fixed right-0 top-0 bottom-0 z-50 w-72 glass-strong border-l border-white/5 lg:hidden flex flex-col"
+              initial={{
+                x: "100%",
+                opacity: 0.8,
+              }}
+              animate={{
+                x: 0,
+                opacity: 1,
+              }}
+              exit={{
+                x: "100%",
+                opacity: 0.8,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 35,
+              }}
+              className={cn(
+                "fixed",
+                "right-0",
+                "top-0",
+                "bottom-0",
+                "z-50",
+                "w-[86vw]",
+                "max-w-[360px]",
+                "bg-[#111111]",
+                "border-l border-white/10",
+                "shadow-[-12px_0_40px_rgba(0,0,0,0.35)]",
+                "lg:hidden",
+                "flex flex-col",
+                "overflow-hidden",
+              )}
               dir="rtl"
             >
-              <div className="p-6 border-b border-white/10">
+              {/* =========================
+                  DRAWER HEADER
+              ========================== */}
+              <div className="relative p-5 border-b border-white/10 shrink-0">
+                {/* Header bottom accent */}
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-foreground">
-                    ساندويجي
-                  </span>
+                  {/* Logo */}
+                  <Link
+                    href="/"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-2.5"
+                  >
+                    <div className="relative w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center">
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary via-orange-500 to-red-600" />
+
+                      <ChefHat className="relative z-10 w-5 h-5 text-white" />
+                    </div>
+
+                    <div className="flex flex-col leading-none">
+                      <span className="text-lg font-bold text-white">
+                        ساندويجي
+                      </span>
+
+                      <span className="text-[9px] tracking-[0.2em] text-primary mt-1">
+                        SANDWEEJI
+                      </span>
+                    </div>
+                  </Link>
+
+                  {/* ONLY MOBILE CLOSE BUTTON */}
                   <button
                     onClick={() => setMobileOpen(false)}
-                    className="p-1.5 rounded-lg hover:bg-white/10 text-foreground/60"
+                    aria-label="إغلاق القائمة"
+                    className={cn(
+                      "w-10 h-10",
+                      "rounded-xl",
+                      "flex items-center justify-center",
+                      "text-white/60",
+                      "hover:text-white",
+                      "hover:bg-white/10",
+                      "transition-colors",
+                    )}
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
-              <nav className="flex-1 p-6 flex flex-col gap-2">
-                {NAV_LINKS.map((link) => {
+
+              {/* =========================
+                  MOBILE NAV
+              ========================== */}
+              <nav className="flex-1 p-5 flex flex-col gap-2 overflow-y-auto">
+                {NAV_LINKS.map((link, index) => {
                   const isActive = pathname === link.href;
-                  // Always select Arabic label
-                  const label = link.keyAr;
-                  // const label = isRtl ? link.keyAr : link.keyEn;
 
                   return (
-                    <Link
+                    <motion.div
                       key={link.href}
-                      href={link.href}
-                      className={cn(
-                        "px-4 py-3 rounded-xl text-base font-medium transition-colors",
-                        isActive
-                          ? "bg-primary/15 text-primary border border-primary/20"
-                          : "text-foreground/70 hover:text-foreground hover:bg-white/5",
-                      )}
+                      initial={{
+                        x: 20,
+                        opacity: 0,
+                      }}
+                      animate={{
+                        x: 0,
+                        opacity: 1,
+                      }}
+                      transition={{
+                        delay: index * 0.05,
+                      }}
                     >
-                      {label}
-                    </Link>
+                      <Link
+                        href={link.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={cn(
+                          "relative",
+                          "flex items-center",
+                          "px-4 py-3.5",
+                          "rounded-xl",
+                          "text-base",
+                          "transition-all duration-200",
+                          isActive
+                            ? "text-primary bg-primary/10 font-bold"
+                            : "text-white/70 font-medium hover:text-white hover:bg-white/5",
+                        )}
+                      >
+                        {/* Active indicator */}
+                        {isActive && (
+                          <span className="absolute right-0 top-2 bottom-2 w-[3px] rounded-full bg-gradient-to-b from-primary to-orange-500" />
+                        )}
+
+                        <span>{link.keyAr}</span>
+                      </Link>
+                    </motion.div>
                   );
                 })}
               </nav>
-              {/* <div className="p-6 border-t border-white/10 flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleLocale}
-                  className="flex-1 border-white/10 text-foreground/70"
+
+              {/* =========================
+                  MOBILE CART BUTTON
+              ========================== */}
+              <div className="relative p-5 border-t border-white/10 shrink-0">
+                {/* Top accent */}
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+
+                <button
+                  onClick={() => {
+                    setMobileOpen(false);
+                    toggleCart();
+                  }}
+                  className={cn(
+                    "relative",
+                    "w-full",
+                    "h-12",
+                    "rounded-xl",
+                    "overflow-hidden",
+                    "flex items-center justify-center",
+                    "gap-2",
+                    "text-white",
+                    "font-bold",
+                    "shadow-lg",
+                    "hover:shadow-primary/30",
+                    "transition-shadow",
+                  )}
                 >
-                  <Globe className="w-4 h-4 mr-2" />
-                  {locale === "en" ? "عربي" : "English"}
-                </Button>
-              </div> */}
+                  {/* Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary via-orange-500 to-red-600" />
+
+                  {/* Highlight */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-transparent to-transparent" />
+
+                  <ShoppingCart className="relative z-10 w-5 h-5" />
+
+                  <span className="relative z-10">السلة</span>
+
+                  {totalItems > 0 && (
+                    <span className="relative z-10 min-w-5 h-5 px-1 rounded-full bg-white/20 text-xs flex items-center justify-center">
+                      {totalItems}
+                    </span>
+                  )}
+                </button>
+              </div>
             </motion.div>
           </>
         )}

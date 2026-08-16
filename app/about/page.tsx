@@ -99,7 +99,7 @@ export default function AboutPage() {
             className="object-cover"
             sizes="(max-width: 1024px) 100vw, 960px"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-background/60 to-transparent" />
           <div className="absolute bottom-4 left-4 sm:bottom-8 sm:left-8">
             <span className="text-2xl sm:text-4xl font-extrabold text-white text-shadow">
               {isRtl ? "ساندويجي | طرابلس" : "Sandweeji | Tripoli"}
@@ -135,7 +135,7 @@ export default function AboutPage() {
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="relative h-60 sm:h-72 md:h-full min-h-[260px] rounded-2xl sm:rounded-3xl overflow-hidden"
+            className="relative h-60 sm:h-72 md:h-full min-h-65 rounded-2xl sm:rounded-3xl overflow-hidden"
           >
             <Image
               src="/images/shawarma-wrap.png"

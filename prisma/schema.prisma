@@ -13,6 +13,7 @@ enum Badge {
   meal
   bestseller
   limited
+  featured
 }
 
 enum ExtraType {

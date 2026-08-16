@@ -89,20 +89,17 @@ export default function HeroSection() {
               transition={{ delay: 0.2 }}
               className="space-y-2"
             >
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground leading-[1.1] sm:leading-[1.05] tracking-tight text-balance">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground leading-snug sm:leading-normal tracking-tight text-balance">
                 {isRtl ? (
                   <>
-                    <span className="text-primary block sm:inline-block sm:ms-3">
+                    <span className="text-primary block sm:inline-block sm:ms-3 mb-4 sm:mb-0">
                       سمينا ساندويجي
                     </span>
-                    <span className="block sm:inline-block">
-                      مشان ترجع تيجي
-                    </span>
+                    <span className="block sm:inline-block">شان ترجع تيجي</span>
                   </>
                 ) : (
                   <>
-                    <span>Taste</span>
-                    <br />
+                    <span className="block mb-4">Taste</span>
                     <span className="text-primary me-2 sm:me-3">the Diff</span>
                     <span className="text-foreground">erence</span>
                   </>

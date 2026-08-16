@@ -14,19 +14,11 @@ import {
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { Product, Category, ExtraType, Badge } from "@/lib/types";
+import { BADGE_MAP } from "@/lib/data";
 
 /* -------------------------------------------------------------------------- */
 /* Types                                                                      */
 /* -------------------------------------------------------------------------- */
-
-const BADGE_OPTIONS: { value: Badge; label: string }[] = [
-  { value: "popular", label: "شعبي" },
-  { value: "new", label: "جديد" },
-  { value: "spicy", label: "🌶 حار" },
-  { value: "meal", label: "وجبة" },
-  { value: "bestseller", label: "الأكثر مبيعًا" },
-  { value: "limited", label: "محدود" },
-];
 
 interface ExtraRow {
   key: string;
@@ -219,7 +211,9 @@ export default function ProductFormModal({
 
   /* --------------------------- Image upload -------------------------------- */
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -441,13 +435,19 @@ export default function ProductFormModal({
                       onChange={(event) =>
                         update("categoryId", event.target.value)
                       }
-                      className={inputCls(errors.categoryId) + " appearance-none"}
+                      className={
+                        inputCls(errors.categoryId) + " appearance-none"
+                      }
                     >
                       <option value="" disabled>
                         اختر التصنيف
                       </option>
                       {categories.map((category) => (
-                        <option key={category.id} value={category.id} className="bg-card">
+                        <option
+                          key={category.id}
+                          value={category.id}
+                          className="bg-card"
+                        >
                           {category.emoji} {category.nameAr}
                         </option>
                       ))}
@@ -542,7 +542,9 @@ export default function ProductFormModal({
                       className="flex items-center gap-1.5 text-xs text-foreground/70 hover:text-primary transition-colors"
                     >
                       <LinkIcon className="w-3 h-3" />
-                      {showManualUrl ? "إخفاء إدخال الرابط" : "أو أدخل رابط الصورة يدويًا"}
+                      {showManualUrl
+                        ? "إخفاء إدخال الرابط"
+                        : "أو أدخل رابط الصورة يدويًا"}
                     </button>
                   </div>
                 </div>
@@ -574,20 +576,20 @@ export default function ProductFormModal({
               {/* Badges */}
               <Field label="الشارات">
                 <div className="flex flex-wrap gap-2">
-                  {BADGE_OPTIONS.map((badge) => {
-                    const selected = form.badges.includes(badge.value);
+                  {Object.entries(BADGE_MAP).map(([key, label]) => {
+                    const selected = form.badges.includes(key as Badge);
                     return (
                       <button
-                        key={badge.value}
+                        key={key}
                         type="button"
-                        onClick={() => toggleBadge(badge.value)}
+                        onClick={() => toggleBadge(key as Badge)}
                         className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                           selected
                             ? "bg-primary/20 text-primary border-primary/40"
                             : "bg-surface text-muted-foreground border-white/10 hover:border-primary/30"
                         }`}
                       >
-                        {badge.label}
+                        {label.labelAr}
                       </button>
                     );
                   })}

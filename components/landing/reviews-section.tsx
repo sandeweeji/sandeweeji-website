@@ -14,7 +14,7 @@ export default function ReviewsSection() {
   const [[page, direction], setPage] = useState([0, 0]);
   const [cardsPerPage, setCardsPerPage] = useState(3);
 
-  // Responsive items per page (1 on mobile, 3 on desktop)
+  // Responsive cards per page
   useEffect(() => {
     const updateCardsPerPage = () => {
       if (window.innerWidth < 768) {
@@ -26,36 +26,40 @@ export default function ReviewsSection() {
 
     updateCardsPerPage();
     window.addEventListener("resize", updateCardsPerPage);
+
     return () => window.removeEventListener("resize", updateCardsPerPage);
   }, []);
 
   const totalPages = Math.ceil(REVIEWS.length / cardsPerPage);
-  const activePageIndex = ((page % totalPages) + totalPages) % totalPages;
+
+  const activePageIndex =
+    totalPages > 0 ? ((page % totalPages) + totalPages) % totalPages : 0;
 
   const paginate = (newDirection: number) => {
     setPage(([prevPage]) => [prevPage + newDirection, newDirection]);
   };
 
-  // Extract visible reviews for the current page
   const currentReviews = Array.from({ length: cardsPerPage }).map((_, i) => {
     const reviewIndex = (activePageIndex * cardsPerPage + i) % REVIEWS.length;
+
     return REVIEWS[reviewIndex];
   });
 
-  // Animation variants
   const variants = {
     enter: (dir: number) => ({
-      x: dir > 0 ? (isRtl ? -400 : 400) : isRtl ? 400 : -400,
+      x: dir > 0 ? (isRtl ? -300 : 300) : isRtl ? 300 : -300,
       opacity: 0,
       scale: 0.98,
     }),
+
     center: {
       x: 0,
       opacity: 1,
       scale: 1,
     },
+
     exit: (dir: number) => ({
-      x: dir < 0 ? (isRtl ? -400 : 400) : isRtl ? 400 : -400,
+      x: dir < 0 ? (isRtl ? -300 : 300) : isRtl ? 300 : -300,
       opacity: 0,
       scale: 0.98,
     }),
@@ -63,33 +67,72 @@ export default function ReviewsSection() {
 
   return (
     <section
-      className="py-16 sm:py-24 bg-[oklch(0.08_0.008_45)] overflow-hidden"
       dir={isRtl ? "rtl" : "ltr"}
+      className="
+        w-full
+        overflow-hidden
+        bg-[oklch(0.08_0.008_45)]
+        pt-16
+        pb-14
+        sm:pt-20
+        sm:pb-16
+        lg:pt-0
+        lg:pb-20
+      "
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div
+        className="
+          mx-auto
+          w-full
+          max-w-7xl
+          px-4
+          sm:px-6
+          lg:px-8
+        "
+      >
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-8 sm:mb-12 space-y-3 sm:space-y-4"
+          viewport={{ once: true, margin: "-80px" }}
+          className="
+            mx-auto
+            mb-8
+            max-w-3xl
+            text-center
+            sm:mb-12
+            lg:mb-14
+          "
         >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass border border-primary/20 text-primary text-xs sm:text-sm font-semibold">
-            <Star className="w-3.5 h-3.5 fill-primary" />
-            {isRtl ? "4.9 من 5" : "4.9 out of 5"}
-          </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-foreground text-balance">
+          <h2
+            className="
+              text-balance
+              text-3xl
+              font-extrabold
+              leading-tight
+              tracking-tight
+              text-foreground
+              sm:text-4xl
+              md:text-5xl
+            "
+          >
             {t("customerLove", locale)}
           </h2>
-          <p className="text-sm sm:text-lg text-muted-foreground max-w-md mx-auto">
-            {t("reviewSubtitle", locale)}
-          </p>
         </motion.div>
 
-        {/* Carousel Container */}
-        <div className="relative max-w-6xl mx-auto">
-          {/* Card Viewport */}
-          <div className="relative min-h-[260px] sm:min-h-[240px] w-full overflow-hidden">
+        {/* Carousel */}
+        <div className="relative mx-auto w-full max-w-6xl">
+          {/* Card viewport */}
+          <div
+            className="
+              relative
+              min-h-[245px]
+              w-full
+              overflow-hidden
+              sm:min-h-[230px]
+              md:min-h-[250px]
+            "
+          >
             <AnimatePresence
               initial={false}
               custom={direction}
@@ -103,21 +146,41 @@ export default function ReviewsSection() {
                 animate="center"
                 exit="exit"
                 transition={{
-                  x: { type: "spring", stiffness: 280, damping: 28 },
-                  opacity: { duration: 0.2 },
+                  x: {
+                    type: "spring",
+                    stiffness: 280,
+                    damping: 28,
+                  },
+                  opacity: {
+                    duration: 0.2,
+                  },
                 }}
                 drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={1}
+                dragConstraints={{
+                  left: 0,
+                  right: 0,
+                }}
+                dragElastic={0.8}
                 onDragEnd={(_, { offset, velocity }) => {
                   const swipe = Math.abs(offset.x) * velocity.x;
-                  if (swipe < -10000 || offset.x < -100) {
+
+                  if (swipe < -10000 || offset.x < -80) {
                     paginate(isRtl ? -1 : 1);
-                  } else if (swipe > 10000 || offset.x > 100) {
+                  } else if (swipe > 10000 || offset.x > 80) {
                     paginate(isRtl ? 1 : -1);
                   }
                 }}
-                className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full cursor-grab active:cursor-grabbing"
+                className="
+                  grid
+                  w-full
+                  grid-cols-1
+                  gap-4
+                  sm:gap-5
+                  md:grid-cols-3
+                  md:gap-6
+                  cursor-grab
+                  active:cursor-grabbing
+                "
               >
                 {currentReviews.map((review, i) => (
                   <ReviewCard
@@ -130,42 +193,134 @@ export default function ReviewsSection() {
             </AnimatePresence>
           </div>
 
-          {/* Navigation Controls Bar */}
-          <div className="flex items-center justify-between mt-8 px-2">
-            {/* Pagination Dots */}
-            <div className="flex items-center gap-1.5">
+          {/* Navigation */}
+          <div
+            className="
+              mt-6
+              flex
+              flex-col
+              gap-5
+              px-1
+              sm:mt-8
+              sm:flex-row
+              sm:items-center
+              sm:justify-between
+              sm:px-2
+            "
+          >
+            {/* Pagination dots */}
+            <div
+              className="
+                flex
+                min-h-5
+                items-center
+                justify-center
+                gap-1.5
+                sm:justify-start
+              "
+            >
               {Array.from({ length: totalPages }).map((_, i) => (
                 <button
                   key={i}
                   onClick={() => {
                     const diff = i - activePageIndex;
-                    if (diff !== 0) paginate(diff);
+
+                    if (diff !== 0) {
+                      paginate(diff);
+                    }
                   }}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    i === activePageIndex
-                      ? "w-6 bg-primary"
-                      : "w-2 bg-white/20 hover:bg-white/40"
-                  }`}
+                  className={`
+                    h-2
+                    rounded-full
+                    transition-all
+                    duration-300
+                    focus:outline-none
+                    focus-visible:ring-2
+                    focus-visible:ring-primary
+                    focus-visible:ring-offset-2
+                    focus-visible:ring-offset-[oklch(0.08_0.008_45)]
+                    ${
+                      i === activePageIndex
+                        ? "w-7 bg-primary"
+                        : "w-2 bg-white/20 hover:bg-white/40"
+                    }
+                  `}
                   aria-label={`Go to page ${i + 1}`}
+                  aria-current={i === activePageIndex ? "true" : undefined}
                 />
               ))}
             </div>
 
-            {/* Previous & Next Buttons */}
-            <div className="flex items-center gap-3">
+            {/* Previous / Next */}
+            <div className="flex items-center justify-center gap-3 sm:justify-end">
               <button
                 onClick={() => paginate(-1)}
-                className="p-2.5 sm:p-3 rounded-full bg-card/80 backdrop-blur border border-white/10 text-foreground active:scale-90 hover:bg-primary/20 hover:border-primary/40 transition-all shadow-lg"
+                className="
+                  flex
+                  h-11
+                  w-11
+                  items-center
+                  justify-center
+                  rounded-full
+                  border
+                  border-white/10
+                  bg-card/80
+                  text-foreground
+                  shadow-lg
+                  backdrop-blur
+                  transition-all
+                  duration-200
+                  hover:border-primary/40
+                  hover:bg-primary/20
+                  active:scale-90
+                  focus:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-primary
+                "
                 aria-label="Previous reviews"
               >
-                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 rtl:rotate-180" />
+                <ChevronLeft
+                  className="
+                    h-5
+                    w-5
+                    rtl:rotate-180
+                  "
+                />
               </button>
+
               <button
                 onClick={() => paginate(1)}
-                className="p-2.5 sm:p-3 rounded-full bg-card/80 backdrop-blur border border-white/10 text-foreground active:scale-90 hover:bg-primary/20 hover:border-primary/40 transition-all shadow-lg"
+                className="
+                  flex
+                  h-11
+                  w-11
+                  items-center
+                  justify-center
+                  rounded-full
+                  border
+                  border-white/10
+                  bg-card/80
+                  text-foreground
+                  shadow-lg
+                  backdrop-blur
+                  transition-all
+                  duration-200
+                  hover:border-primary/40
+                  hover:bg-primary/20
+                  active:scale-90
+                  focus:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-primary
+                "
                 aria-label="Next reviews"
               >
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 rtl:rotate-180" />
+                <ChevronRight
+                  className="
+                    h-5
+                    w-5
+                    rtl:rotate-180
+                  "
+                />
               </button>
             </div>
           </div>
@@ -183,7 +338,9 @@ function ReviewCard({
   locale: "en" | "ar";
 }) {
   const text = locale === "ar" ? review.textAr : review.textEn;
+
   const initials = review.authorName.slice(0, 2).toUpperCase();
+
   const avatarColors = [
     "bg-amber-500",
     "bg-orange-500",
@@ -191,34 +348,128 @@ function ReviewCard({
     "bg-yellow-500",
     "bg-emerald-500",
   ];
+
   const color = avatarColors[review.id.charCodeAt(1) % avatarColors.length];
 
   return (
-    <div className="h-full bg-card/80 backdrop-blur border border-white/10 rounded-2xl p-5 sm:p-6 flex flex-col justify-between space-y-4 shadow-xl select-none">
+    <motion.div
+      className="
+        flex
+        h-full
+        min-h-[225px]
+        flex-col
+        justify-between
+        rounded-2xl
+        border
+        border-white/10
+        bg-card/80
+        p-5
+        shadow-xl
+        backdrop-blur
+        select-none
+        sm:min-h-[215px]
+        sm:p-6
+        md:min-h-[235px]
+      "
+      whileHover={{
+        y: -4,
+      }}
+      transition={{
+        duration: 0.2,
+      }}
+    >
+      {/* Review content */}
       <div className="space-y-3">
-        <Quote className="w-5 h-5 sm:w-6 sm:h-6 text-primary/40" />
-        <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed line-clamp-4">
+        <Quote
+          className="
+            h-5
+            w-5
+            text-primary/40
+            sm:h-6
+            sm:w-6
+          "
+        />
+
+        <p
+          className="
+            text-sm
+            leading-relaxed
+            text-foreground/90
+            sm:text-sm
+            md:text-base
+            line-clamp-4
+          "
+        >
           {text}
         </p>
       </div>
 
-      <div className="flex items-center gap-3 pt-3 border-t border-white/5">
+      {/* Author */}
+      <div
+        className="
+          mt-5
+          flex
+          min-w-0
+          items-center
+          gap-3
+          border-t
+          border-white/5
+          pt-4
+        "
+      >
+        {/* Avatar */}
         <div
-          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full ${color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm`}
+          className={`
+            flex
+            h-9
+            w-9
+            flex-shrink-0
+            items-center
+            justify-center
+            rounded-full
+            ${color}
+            text-xs
+            font-bold
+            text-white
+            shadow-sm
+            sm:h-10
+            sm:w-10
+          `}
         >
           {initials}
         </div>
+
+        {/* Name + rating */}
         <div className="min-w-0 flex-1">
-          <p className="text-xs sm:text-sm font-semibold text-foreground truncate">
+          <p
+            className="
+              truncate
+              text-sm
+              font-semibold
+              text-foreground
+              sm:text-sm
+            "
+          >
             {review.authorName}
           </p>
-          <div className="flex items-center gap-0.5 mt-0.5">
+
+          <div className="mt-1 flex items-center gap-0.5">
             {[...Array(review.rating)].map((_, i) => (
-              <Star key={i} className="w-3 h-3 fill-primary text-primary" />
+              <Star
+                key={i}
+                className="
+                  h-3
+                  w-3
+                  fill-primary
+                  text-primary
+                  sm:h-3.5
+                  sm:w-3.5
+                "
+              />
             ))}
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
