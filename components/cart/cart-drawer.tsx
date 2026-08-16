@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useCartStore } from "@/lib/cart-store";
@@ -29,12 +28,6 @@ import { RESTAURANT_SETTINGS } from "@/lib/data";
 import { formatPrice } from "@/lib/utils";
 
 import type { CartExtra } from "@/lib/types";
-
-/* =========================================================
-   Local cart types
-   CartItem is not exported from @/lib/types, so we define
-   the shape used by the cart store here.
-========================================================= */
 
 type CartItem = {
   id: string;
@@ -49,7 +42,7 @@ type CartItem = {
 };
 
 /* =========================================================
-   Cart Item Row
+   Cart Item
 ========================================================= */
 
 function CartItemRow({ item }: { item: CartItem }) {
@@ -80,293 +73,319 @@ function CartItemRow({ item }: { item: CartItem }) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, x: 30 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
       exit={{
         opacity: 0,
-        x: -30,
+        y: -10,
         height: 0,
         marginBottom: 0,
         paddingTop: 0,
         paddingBottom: 0,
       }}
       transition={{ duration: 0.22 }}
-      className="py-4 border-b border-white/5 last:border-b-0"
+      className="py-3.5"
     >
-      <div className="flex gap-3">
-        {/* Product image */}
-        <div className="relative w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-xl overflow-hidden shrink-0 bg-surface">
-          <Image
-            src={item.image}
-            alt={name}
-            fill
-            className="object-cover"
-            sizes="72px"
-          />
-        </div>
+      <div
+        className="
+          relative
+          rounded-2xl
+          bg-[#242424]
+          p-3
+          shadow-[0_8px_30px_rgba(0,0,0,0.18)]
+        "
+      >
+        <div className="flex gap-3">
+          {/* Product image */}
+          <div
+            className="
+              relative
+              w-[72px]
+              h-[72px]
+              rounded-xl
+              overflow-hidden
+              shrink-0
+              bg-[#303030]
+            "
+          >
+            <Image
+              src={item.image}
+              alt={name}
+              fill
+              className="object-cover"
+              sizes="72px"
+            />
 
-        {/* Main content */}
-        <div className="flex-1 min-w-0">
-          {/* Product name + delete */}
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-sm sm:text-[15px] font-bold text-foreground leading-snug wrap-break-word">
-              {name}
-            </p>
-
-            <button
-              type="button"
-              onClick={() => removeItem(item.id)}
-              className="
-                shrink-0
-                p-1.5
-                rounded-lg
-                text-muted-foreground/50
-                hover:text-destructive
-                hover:bg-destructive/10
-                active:scale-90
-                transition-all
-              "
-              aria-label={t("remove", locale)}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            <div className="absolute inset-0 bg-black/5" />
           </div>
 
-          {/* Added extras */}
-          {addedExtras.length > 0 && (
-            <div className="mt-2 space-y-1">
-              <p className="text-[11px] font-semibold text-primary/70">
-                {locale === "ar" ? "الإضافات" : "Add-ons"}
+          {/* Main content */}
+          <div className="flex-1 min-w-0">
+            {/* Name + delete */}
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-[15px] font-extrabold text-white leading-snug">
+                {name}
               </p>
 
-              {addedExtras.map((extra: CartExtra) => {
-                const extraName =
-                  locale === "ar" ? extra.nameAr : extra.nameEn || extra.nameAr;
-
-                return (
-                  <div
-                    key={extra.id}
-                    className="flex items-center justify-between gap-2"
-                  >
-                    <p className="text-xs text-primary/80 wrap-break-word">
-                      <span className="font-bold">+</span> {extraName}
-                    </p>
-
-                    {Number(extra.price) > 0 && (
-                      <span className="text-[11px] text-primary/60 shrink-0">
-                        +{formatPrice(Number(extra.price))}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Removed ingredients */}
-          {removedExtras.length > 0 && (
-            <div className="mt-2 space-y-1">
-              <p className="text-[11px] font-semibold text-red-400/70">
-                {locale === "ar" ? "بدون مكونات" : "Without"}
-              </p>
-
-              {removedExtras.map((extra: CartExtra) => {
-                const extraName =
-                  locale === "ar" ? extra.nameAr : extra.nameEn || extra.nameAr;
-
-                return (
-                  <p
-                    key={extra.id}
-                    className="text-xs text-red-400/80 wrap-break-word"
-                  >
-                    <span className="font-bold">−</span> {extraName}
-                  </p>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Notes */}
-          {isEditingNotes ? (
-            <div className="mt-3 space-y-2">
-              <Textarea
-                autoFocus
-                value={draftNotes}
-                onChange={(event) => setDraftNotes(event.target.value)}
-                placeholder={
-                  locale === "ar" ? "أضف ملاحظتك..." : "Add your note..."
-                }
-                rows={2}
+              <button
+                type="button"
+                onClick={() => removeItem(item.id)}
                 className="
-                  min-h-[70px]
-                  bg-surface
-                  border-white/10
-                  text-foreground
-                  placeholder:text-muted-foreground/50
-                  focus:border-primary/50
-                  resize-none
-                  rounded-xl
-                  text-xs
+                  shrink-0
+                  w-8
+                  h-8
+                  rounded-lg
+                  flex
+                  items-center
+                  justify-center
+                  text-white/30
+                  hover:text-red-400
+                  hover:bg-red-400/10
+                  active:scale-90
+                  transition-all
                 "
-              />
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={saveNotes}
-                  className="
-                    flex-1
-                    h-8
-                    rounded-lg
-                    bg-primary
-                    text-primary-foreground
-                    text-xs
-                    font-semibold
-                    flex
-                    items-center
-                    justify-center
-                    gap-1.5
-                    hover:bg-primary/90
-                    transition-colors
-                  "
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  {locale === "ar" ? "حفظ" : "Save"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDraftNotes(item.notes ?? "");
-                    setIsEditingNotes(false);
-                  }}
-                  className="
-                    h-8
-                    px-3
-                    rounded-lg
-                    bg-surface
-                    border
-                    border-white/10
-                    text-muted-foreground
-                    text-xs
-                    font-semibold
-                    hover:text-foreground
-                    transition-colors
-                  "
-                >
-                  {locale === "ar" ? "إلغاء" : "Cancel"}
-                </button>
-              </div>
+                aria-label={t("remove", locale)}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
-          ) : (
-            <div className="mt-2">
-              {item.notes?.trim() ? (
-                <div className="flex items-start gap-2">
-                  <p className="flex-1 min-w-0 text-xs text-muted-foreground italic wrap-break-word">
-                    📝 {item.notes}
-                  </p>
+
+            {/* Added extras */}
+            {addedExtras.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {addedExtras.map((extra: CartExtra) => {
+                  const extraName =
+                    locale === "ar"
+                      ? extra.nameAr
+                      : extra.nameEn || extra.nameAr;
+
+                  return (
+                    <div
+                      key={extra.id}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <p className="text-xs text-white/45">
+                        <span className="text-primary font-bold">+</span>{" "}
+                        {extraName}
+                      </p>
+
+                      {Number(extra.price) > 0 && (
+                        <span className="text-[11px] text-white/35 shrink-0">
+                          +{formatPrice(Number(extra.price))}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Removed ingredients */}
+            {removedExtras.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {removedExtras.map((extra: CartExtra) => {
+                  const extraName =
+                    locale === "ar"
+                      ? extra.nameAr
+                      : extra.nameEn || extra.nameAr;
+
+                  return (
+                    <p key={extra.id} className="text-xs text-red-400/65">
+                      <span className="font-bold">−</span> {extraName}
+                    </p>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Notes */}
+            {isEditingNotes ? (
+              <div className="mt-3 space-y-2">
+                <Textarea
+                  autoFocus
+                  value={draftNotes}
+                  onChange={(event) => setDraftNotes(event.target.value)}
+                  placeholder={
+                    locale === "ar" ? "أضف ملاحظتك..." : "Add your note..."
+                  }
+                  rows={2}
+                  className="
+                    min-h-[70px]
+                    bg-[#1B1B1B]
+                    border-0
+                    text-white
+                    placeholder:text-white/25
+                    focus:ring-1
+                    focus:ring-primary/40
+                    resize-none
+                    rounded-xl
+                    text-xs
+                  "
+                />
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={saveNotes}
+                    className="
+                      flex-1
+                      h-8
+                      rounded-lg
+                      bg-primary
+                      text-primary-foreground
+                      text-xs
+                      font-bold
+                      flex
+                      items-center
+                      justify-center
+                      gap-1.5
+                      hover:opacity-90
+                      transition-opacity
+                    "
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    {locale === "ar" ? "حفظ" : "Save"}
+                  </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       setDraftNotes(item.notes ?? "");
+                      setIsEditingNotes(false);
+                    }}
+                    className="
+                      h-8
+                      px-3
+                      rounded-lg
+                      bg-[#303030]
+                      text-white/45
+                      text-xs
+                      font-semibold
+                      hover:text-white
+                      transition-colors
+                    "
+                  >
+                    {locale === "ar" ? "إلغاء" : "Cancel"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-2">
+                {item.notes?.trim() ? (
+                  <div className="flex items-start gap-2">
+                    <p className="flex-1 min-w-0 text-xs text-white/40 italic">
+                      📝 {item.notes}
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDraftNotes(item.notes ?? "");
+                        setIsEditingNotes(true);
+                      }}
+                      className="
+                        shrink-0
+                        p-1
+                        rounded-md
+                        text-white/30
+                        hover:text-primary
+                        hover:bg-primary/10
+                        transition-colors
+                      "
+                      aria-label={
+                        locale === "ar" ? "تعديل الملاحظة" : "Edit note"
+                      }
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDraftNotes("");
                       setIsEditingNotes(true);
                     }}
                     className="
-                      shrink-0
-                      p-1
-                      rounded-md
-                      text-muted-foreground/60
+                      flex
+                      items-center
+                      gap-1.5
+                      text-[11px]
+                      text-white/30
                       hover:text-primary
-                      hover:bg-primary/10
                       transition-colors
                     "
-                    aria-label={
-                      locale === "ar" ? "تعديل الملاحظة" : "Edit note"
-                    }
                   >
                     <Pencil className="w-3 h-3" />
+                    {locale === "ar" ? "إضافة ملاحظة" : "Add note"}
                   </button>
-                </div>
-              ) : (
-                <button
+                )}
+              </div>
+            )}
+
+            {/* Quantity + price */}
+            <div className="flex items-center justify-between gap-3 mt-3">
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-1
+                  rounded-xl
+                  bg-[#1B1B1B]
+                  p-1
+                "
+              >
+                <motion.button
                   type="button"
-                  onClick={() => {
-                    setDraftNotes("");
-                    setIsEditingNotes(true);
-                  }}
+                  whileTap={{ scale: 0.85 }}
+                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
                   className="
+                    w-7
+                    h-7
+                    rounded-lg
                     flex
                     items-center
-                    gap-1.5
-                    text-[11px]
-                    text-muted-foreground/60
-                    hover:text-primary
+                    justify-center
+                    text-white/50
+                    hover:text-white
+                    hover:bg-[#303030]
                     transition-colors
                   "
+                  aria-label="Decrease quantity"
                 >
-                  <Pencil className="w-3 h-3" />
-                  {locale === "ar" ? "إضافة ملاحظة" : "Add note"}
-                </button>
-              )}
-            </div>
-          )}
+                  <Minus className="w-3 h-3" />
+                </motion.button>
 
-          {/* Quantity + price */}
-          <div className="flex items-center justify-between gap-3 mt-3">
-            {/* Quantity */}
-            <div className="flex items-center gap-2">
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.85 }}
-                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                className="
-                  w-7 h-7
-                  rounded-lg
-                  bg-surface-elevated
-                  border border-white/10
-                  flex items-center justify-center
-                  text-foreground/70
-                  hover:text-foreground
-                  hover:border-primary/40
-                  active:bg-primary/10
-                  transition-colors
-                "
-                aria-label="Decrease quantity"
-              >
-                <Minus className="w-3 h-3" />
-              </motion.button>
+                <span className="text-sm font-bold w-5 text-center text-white">
+                  {item.quantity}
+                </span>
 
-              <span className="text-sm font-bold w-5 text-center text-foreground">
-                {item.quantity}
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.85 }}
+                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                  className="
+                    w-7
+                    h-7
+                    rounded-lg
+                    flex
+                    items-center
+                    justify-center
+                    text-white/50
+                    hover:text-white
+                    hover:bg-[#303030]
+                    transition-colors
+                  "
+                  aria-label="Increase quantity"
+                >
+                  <Plus className="w-3 h-3" />
+                </motion.button>
+              </div>
+
+              <span className="text-[15px] font-extrabold text-primary">
+                {formatPrice(itemTotal)}
               </span>
-
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.85 }}
-                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                className="
-                  w-7 h-7
-                  rounded-lg
-                  bg-surface-elevated
-                  border border-white/10
-                  flex items-center justify-center
-                  text-foreground/70
-                  hover:text-foreground
-                  hover:border-primary/40
-                  active:bg-primary/10
-                  transition-colors
-                "
-                aria-label="Increase quantity"
-              >
-                <Plus className="w-3 h-3" />
-              </motion.button>
             </div>
-
-            {/* Item price */}
-            <span className="text-sm font-extrabold text-primary whitespace-nowrap">
-              {formatPrice(itemTotal)}
-            </span>
           </div>
         </div>
       </div>
@@ -391,11 +410,6 @@ export default function CartDrawer() {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
 
-  /*
-   * Prevent the page behind the drawer from scrolling.
-   * This is important on mobile where the drawer can otherwise
-   * scroll the underlying document.
-   */
   useEffect(() => {
     if (!isOpen) return;
 
@@ -411,21 +425,20 @@ export default function CartDrawer() {
     };
   }, [isOpen]);
 
-  /*
-   * Also clear errors when the user starts entering the
-   * required address.
-   */
   const canSubmit = useMemo(
-    () => address.trim().length > 0 && items.length > 0,
-    [address, items.length],
+    () =>
+      address.trim().length > 0 &&
+      name.trim().length > 0 &&
+      phone.trim().length > 0 &&
+      items.length > 0,
+    [address, name, phone, items.length],
   );
 
   const handleWhatsAppOrder = () => {
     const cleanAddress = address.trim();
+    const cleanName = name.trim();
+    const cleanPhone = phone.trim();
 
-    /*
-     * Address is the ONLY required customer field.
-     */
     if (!cleanAddress) {
       setError(
         isRtl
@@ -435,21 +448,19 @@ export default function CartDrawer() {
       return;
     }
 
-    if (!name.trim()) {
-      setError(isRtl ? "يرجى إدخال الاسم." : "Please enter your name .");
+    if (!cleanName) {
+      setError(isRtl ? "يرجى إدخال الاسم." : "Please enter your name.");
       return;
     }
 
-    if (!phone.trim()) {
+    if (!cleanPhone) {
       setError(
         isRtl ? "يرجى إدخال رقم الهاتف." : "Please enter your phone number.",
       );
       return;
     }
 
-    if (items.length === 0) {
-      return;
-    }
+    if (items.length === 0) return;
 
     setError("");
 
@@ -472,13 +483,6 @@ export default function CartDrawer() {
 
       message += `\n• ${item.quantity}x ${itemName}`;
 
-      /*
-       * Add-ons
-       *
-       * IMPORTANT:
-       * No IDs are included in the WhatsApp message.
-       * The restaurant receives human-readable names only.
-       */
       if (addedExtras.length > 0) {
         message += locale === "ar" ? "\n  الإضافات:" : "\n  Add-ons:";
 
@@ -490,11 +494,6 @@ export default function CartDrawer() {
         });
       }
 
-      /*
-       * Removed ingredients
-       *
-       * Again: names only, never database IDs.
-       */
       if (removedExtras.length > 0) {
         message += locale === "ar" ? "\n  بدون:" : "\n  Without:";
 
@@ -506,9 +505,6 @@ export default function CartDrawer() {
         });
       }
 
-      /*
-       * Notes
-       */
       if (item.notes?.trim()) {
         message +=
           locale === "ar"
@@ -519,39 +515,23 @@ export default function CartDrawer() {
       message += "\n";
     });
 
-    /*
-     * Total
-     */
     message +=
       locale === "ar"
         ? `\nالمجموع: ${formatPrice(total)}`
         : `\nTotal: ${formatPrice(total)}`;
 
-    /*
-     * Address — required
-     */
     message +=
       locale === "ar"
         ? `\nعنوان التوصيل: ${cleanAddress}`
         : `\nDelivery address: ${cleanAddress}`;
 
-    /*
-     * Name — optional
-     */
-    if (name.trim()) {
-      message +=
-        locale === "ar" ? `\nالاسم: ${name.trim()}` : `\nName: ${name.trim()}`;
-    }
+    message +=
+      locale === "ar" ? `\nالاسم: ${cleanName}` : `\nName: ${cleanName}`;
 
-    /*
-     * Phone — optional
-     */
-    if (phone.trim()) {
-      message +=
-        locale === "ar"
-          ? `\nرقم الهاتف: ${phone.trim()}`
-          : `\nPhone: ${phone.trim()}`;
-    }
+    message +=
+      locale === "ar"
+        ? `\nرقم الهاتف: ${cleanPhone}`
+        : `\nPhone: ${cleanPhone}`;
 
     message += locale === "ar" ? "\n\nشكراً!" : "\n\nThank you!";
 
@@ -579,9 +559,8 @@ export default function CartDrawer() {
               fixed
               inset-0
               z-[60]
-              bg-black/70
-              backdrop-blur-sm
-              touch-none
+              bg-black/75
+              backdrop-blur-[6px]
             "
           />
 
@@ -606,14 +585,13 @@ export default function CartDrawer() {
               inset-y-0
               z-[70]
               w-full
-              sm:max-w-md
+              sm:max-w-[430px]
               flex
               flex-col
               overflow-hidden
-              bg-card
-              shadow-2xl
-              ${isRtl ? "left-0 border-r" : "right-0 border-l"}
-              border-white/10
+              bg-[#1B1B1B]
+              shadow-[-20px_0_60px_rgba(0,0,0,0.35)]
+              ${isRtl ? "left-0" : "right-0"}
             `}
             style={{
               height: "100dvh",
@@ -634,67 +612,67 @@ export default function CartDrawer() {
             <div
               className="
                 shrink-0
-                flex
-                items-center
-                justify-between
-                px-4
+                px-5
                 sm:px-6
-                py-4
-                border-b
-                border-white/10
-                bg-card
+                pt-5
+                pb-4
+                bg-[#1B1B1B]
               "
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <div
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className="
+                      w-11
+                      h-11
+                      rounded-2xl
+                      bg-primary/10
+                      flex
+                      items-center
+                      justify-center
+                      shrink-0
+                    "
+                  >
+                    <ShoppingBag className="w-5 h-5 text-primary" />
+                  </div>
+
+                  <div>
+                    <h2 className="text-lg font-extrabold text-white">
+                      {t("yourCart", locale)}
+                    </h2>
+
+                    <p className="text-xs text-white/35 mt-0.5">
+                      {items.length} {t("cartItems", locale)}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeCart}
                   className="
                     w-10
                     h-10
                     rounded-xl
-                    bg-primary/15
-                    border
-                    border-primary/20
+                    bg-[#252525]
                     flex
                     items-center
                     justify-center
-                    shrink-0
+                    text-white/50
+                    hover:text-white
+                    hover:bg-[#303030]
+                    active:scale-90
+                    transition-all
                   "
+                  aria-label={locale === "ar" ? "إغلاق السلة" : "Close cart"}
                 >
-                  <ShoppingBag className="w-5 h-5 text-primary" />
-                </div>
-
-                <div className="min-w-0">
-                  <h2 className="text-base sm:text-lg font-extrabold text-foreground">
-                    {t("yourCart", locale)}
-                  </h2>
-
-                  <p className="text-xs text-muted-foreground">
-                    {items.length} {t("cartItems", locale)}
-                  </p>
-                </div>
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={closeCart}
-                className="
-                  shrink-0
-                  p-2
-                  rounded-xl
-                  text-muted-foreground
-                  hover:text-foreground
-                  hover:bg-white/5
-                  active:scale-90
-                  transition-all
-                "
-                aria-label={locale === "ar" ? "إغلاق السلة" : "Close cart"}
-              >
-                <X className="w-5 h-5" />
-              </button>
             </div>
 
             {/* =================================================
-                Scrollable content
+                Content
             ================================================= */}
             <div
               className="
@@ -703,7 +681,7 @@ export default function CartDrawer() {
                 overflow-y-auto
                 overscroll-contain
                 px-4
-                sm:px-6
+                sm:px-5
                 scrollbar-hide
               "
               style={{
@@ -713,14 +691,8 @@ export default function CartDrawer() {
             >
               {items.length === 0 ? (
                 <motion.div
-                  initial={{
-                    opacity: 0,
-                    y: 20,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
                   className="
                     flex
                     flex-col
@@ -734,26 +706,24 @@ export default function CartDrawer() {
                 >
                   <div
                     className="
-                      w-20
-                      h-20
-                      rounded-2xl
-                      bg-surface
-                      border
-                      border-white/10
+                      w-24
+                      h-24
+                      rounded-[28px]
+                      bg-[#242424]
                       flex
                       items-center
                       justify-center
                     "
                   >
-                    <ShoppingBag className="w-10 h-10 text-muted-foreground/40" />
+                    <ShoppingBag className="w-10 h-10 text-white/15" />
                   </div>
 
                   <div>
-                    <p className="text-base font-bold text-foreground">
+                    <p className="text-base font-extrabold text-white">
                       {t("cartEmpty", locale)}
                     </p>
 
-                    <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+                    <p className="text-sm text-white/35 mt-1 max-w-xs">
                       {t("cartEmptyDesc", locale)}
                     </p>
                   </div>
@@ -767,13 +737,16 @@ export default function CartDrawer() {
                       hover:bg-primary/90
                       rounded-xl
                       px-5
+                      h-11
+                      font-bold
                     "
                   >
                     {t("browseMenu", locale)}
 
                     <ArrowRight
                       className={`
-                        w-4 h-4
+                        w-4
+                        h-4
                         ${isRtl ? "mr-2 rotate-180" : "ml-2"}
                       `}
                     />
@@ -790,48 +763,91 @@ export default function CartDrawer() {
 
             {/* =================================================
                 Footer
-                This section stays visible while cart items
-                scroll independently.
             ================================================= */}
             {items.length > 0 && (
               <div
                 className="
                   shrink-0
-                  border-t
-                  border-white/10
-                  bg-card
-                  px-4
+                  bg-[#202020]
+                  rounded-t-[28px]
+                  px-5
                   sm:px-6
-                  pt-4
+                  pt-5
                   pb-[max(1rem,env(safe-area-inset-bottom))]
+                  shadow-[0_-15px_40px_rgba(0,0,0,0.22)]
                 "
               >
-                {/* Delivery section */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm sm:text-[15px] font-extrabold text-foreground">
-                        {isRtl ? "معلومات التوصيل" : "Delivery information"}
-                      </h3>
+                {/* Delivery heading */}
+                <div className="mb-3">
+                  <h3 className="text-sm font-extrabold text-white">
+                    {isRtl ? "معلومات التوصيل" : "Delivery information"}
+                  </h3>
 
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {isRtl
-                          ? "العنوان مطلوب، الاسم والهاتف اختياريان"
-                          : "Address is required. Name and phone are optional."}
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-[11px] text-white/30 mt-1">
+                    {isRtl
+                      ? "جميع المعلومات مطلوبة لإتمام الطلب"
+                      : "All information is required to place your order."}
+                  </p>
+                </div>
 
-                  {/* Address */}
+                {/* Address */}
+                <div className="relative mb-2">
+                  <MapPin
+                    className={`
+                      absolute
+                      top-3.5
+                      ${isRtl ? "right-3" : "left-3"}
+                      w-4
+                      h-4
+                      text-primary
+                      pointer-events-none
+                      z-10
+                    `}
+                  />
+
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(event) => {
+                      setAddress(event.target.value);
+
+                      if (error) {
+                        setError("");
+                      }
+                    }}
+                    placeholder={
+                      isRtl ? "عنوان التوصيل *" : "Delivery address *"
+                    }
+                    required
+                    className={`
+                      w-full
+                      h-11
+                      rounded-xl
+                      bg-[#292929]
+                      border-0
+                      text-white
+                      text-sm
+                      outline-none
+                      placeholder:text-white/25
+                      focus:ring-1
+                      focus:ring-primary/50
+                      transition-all
+                      ${isRtl ? "pr-10 pl-3" : "pl-10 pr-3"}
+                    `}
+                  />
+                </div>
+
+                {/* Name + Phone */}
+                <div className="grid grid-cols-2 gap-2">
                   <div className="relative">
-                    <MapPin
+                    <User
                       className={`
                         absolute
                         top-3.5
                         ${isRtl ? "right-3" : "left-3"}
                         w-4
                         h-4
-                        text-primary
+                        text-white/30
                         pointer-events-none
                         z-10
                       `}
@@ -839,166 +855,118 @@ export default function CartDrawer() {
 
                     <input
                       type="text"
-                      value={address}
+                      value={name}
                       onChange={(event) => {
-                        setAddress(event.target.value);
+                        setName(event.target.value);
 
                         if (error) {
                           setError("");
                         }
                       }}
-                      placeholder={
-                        isRtl ? "عنوان التوصيل *" : "Delivery address *"
-                      }
+                      placeholder={isRtl ? "الاسم *" : "Name *"}
                       required
                       className={`
                         w-full
                         h-11
                         rounded-xl
-                        bg-surface
-                        border
-                        text-foreground
+                        bg-[#292929]
+                        border-0
+                        text-white
                         text-sm
                         outline-none
-                        placeholder:text-muted-foreground/50
-                        focus:border-primary/50
+                        placeholder:text-white/25
                         focus:ring-1
-                        focus:ring-primary/20
+                        focus:ring-primary/50
                         transition-all
                         ${isRtl ? "pr-10 pl-3" : "pl-10 pr-3"}
                       `}
                     />
                   </div>
 
-                  {/* Name + phone */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {/* Name */}
-                    <div className="relative">
-                      <User
-                        className={`
-                          absolute
-                          top-3.5
-                          ${isRtl ? "right-3" : "left-3"}
-                          w-4
-                          h-4
-                          text-muted-foreground
-                          
-                          pointer-events-none
-                          z-10
-                        `}
-                      />
+                  <div className="relative">
+                    <Phone
+                      className={`
+                        absolute
+                        top-3.5
+                        ${isRtl ? "right-3" : "left-3"}
+                        w-4
+                        h-4
+                        text-white/30
+                        pointer-events-none
+                        z-10
+                      `}
+                    />
 
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(event) => setName(event.target.value)}
-                        placeholder={
-                          isRtl ? "الاسم (مطلوب)" : "Name (required)"
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(event) => {
+                        setPhone(event.target.value);
+
+                        if (error) {
+                          setError("");
                         }
-                        className={`
-                          w-full
-                          h-11
-                          rounded-xl
-                          bg-surface
-                          border
-                          border-white/10
-                          text-foreground
-                          text-sm
-                          outline-none
-                          placeholder:text-muted-foreground/50
-                          focus:border-primary/50
-                          focus:ring-1
-                          focus:ring-primary/20
-                          transition-all
-                          ${isRtl ? "pr-10 pl-3" : "pl-10 pr-3"}
-                        `}
-                      />
-                    </div>
-
-                    {/* Phone */}
-                    <div className="relative">
-                      <Phone
-                        className={`
-                          absolute
-                          top-3.5
-                          ${isRtl ? "right-3" : "left-3"}
-                          w-4
-                          h-4
-                          text-muted-foreground
-                          pointer-events-none
-                          z-10
-                        `}
-                      />
-
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(event) => setPhone(event.target.value)}
-                        placeholder={
-                          isRtl ? "الهاتف (مطلوب)" : "Phone (required)"
-                        }
-                        className={`
-                          w-full
-                          h-11
-                          rounded-xl
-                          bg-surface
-                          border
-                          border-white/10
-                          text-foreground
-                          text-sm
-                          outline-none
-                          placeholder:text-muted-foreground/50
-                          focus:border-primary/50
-                          focus:ring-1
-                          focus:ring-primary/20
-                          transition-all
-                          ${isRtl ? "pr-10 pl-3" : "pl-10 pr-3"}
-                        `}
-                      />
-                    </div>
+                      }}
+                      placeholder={isRtl ? "الهاتف *" : "Phone *"}
+                      required
+                      className={`
+                        w-full
+                        h-11
+                        rounded-xl
+                        bg-[#292929]
+                        border-0
+                        text-white
+                        text-sm
+                        outline-none
+                        placeholder:text-white/25
+                        focus:ring-1
+                        focus:ring-primary/50
+                        transition-all
+                        ${isRtl ? "pr-10 pl-3" : "pl-10 pr-3"}
+                      `}
+                    />
                   </div>
-
-                  {/* Error */}
-                  <AnimatePresence>
-                    {error && (
-                      <motion.p
-                        initial={{
-                          opacity: 0,
-                          height: 0,
-                        }}
-                        animate={{
-                          opacity: 1,
-                          height: "auto",
-                        }}
-                        exit={{
-                          opacity: 0,
-                          height: 0,
-                        }}
-                        className="text-xs font-semibold text-red-400"
-                      >
-                        {error}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
                 </div>
 
-                {/* Divider */}
-                <Separator className="my-3 bg-white/5" />
+                {/* Error */}
+                <AnimatePresence>
+                  {error && (
+                    <motion.div
+                      initial={{
+                        opacity: 0,
+                        height: 0,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        height: "auto",
+                      }}
+                      exit={{
+                        opacity: 0,
+                        height: 0,
+                      }}
+                      className="overflow-hidden"
+                    >
+                      <p className="text-xs font-semibold text-red-400 mt-2">
+                        {error}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Totals */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
+                <div className="mt-4 pt-4 border-t border-white/5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-white/40">
                       {t("subtotal", locale)}
                     </span>
 
-                    <span className="font-semibold text-foreground">
+                    <span className="text-sm font-semibold text-white/70">
                       {formatPrice(total)}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-base font-extrabold text-foreground">
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-base font-extrabold text-white">
                       {t("total", locale)}
                     </span>
 
@@ -1021,9 +989,8 @@ export default function CartDrawer() {
                   className="
                     w-full
                     mt-4
-                    h-12
-                    sm:h-13
-                    rounded-xl
+                    h-13
+                    rounded-2xl
                     bg-[#25D366]
                     text-white
                     font-extrabold
@@ -1033,8 +1000,7 @@ export default function CartDrawer() {
                     items-center
                     justify-center
                     gap-2.5
-                    shadow-lg
-                    shadow-black/10
+                    shadow-[0_8px_25px_rgba(37,211,102,0.16)]
                     hover:bg-[#1ebe5d]
                     active:bg-[#19ad54]
                     transition-colors
@@ -1045,7 +1011,7 @@ export default function CartDrawer() {
                   {t("sendOrder", locale)}
                 </motion.button>
 
-                {/* Clear cart */}
+                {/* Clear */}
                 <button
                   type="button"
                   onClick={clearCart}
@@ -1055,8 +1021,8 @@ export default function CartDrawer() {
                     py-1.5
                     text-[11px]
                     font-medium
-                    text-muted-foreground/70
-                    hover:text-destructive
+                    text-white/25
+                    hover:text-red-400
                     transition-colors
                   "
                 >
