@@ -682,7 +682,7 @@ export default function ProductFormModal({
                   type="button"
                   whileTap={{ scale: 0.97 }}
                   onClick={handleSubmit}
-                  disabled={isSubmitting || isDeleting}
+                  disabled={isSubmitting || isDeleting || isUploadingImage}
                   className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 transition-colors glow-brand disabled:opacity-60"
                 >
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
