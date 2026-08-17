@@ -1,8 +1,9 @@
 "use client";
+
 import HeroSection from "@/components/landing/hero-section";
 import FeaturedSection from "@/components/landing/featured-section";
 import ReviewsSection from "@/components/landing/reviews-section";
-import CtaSection from "@/components/landing/cta-section";
+import ScrollToTop from "@/components/ui/scroll-to-top";
 
 export default function HomePage() {
   return (
@@ -11,6 +12,8 @@ export default function HomePage() {
       <FeaturedSection />
       <ReviewsSection />
       {/* <CtaSection /> */}
+
+      <ScrollToTop />
     </main>
   );
 }
