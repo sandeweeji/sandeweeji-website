@@ -9,6 +9,7 @@ import {
   useTransform,
   type PanInfo,
 } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import {
   X,
   Minus,
@@ -19,6 +20,8 @@ import {
   ArrowRight,
   ArrowLeft,
   MapPin,
+  Search,
+  Truck,
   User,
   Phone,
   Pencil,
@@ -26,10 +29,12 @@ import {
   Loader2,
   StickyNote,
 } from "lucide-react";
+import whatsapp from "@/public/whatsapp.png";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
+import { axiosGet } from "@/lib/axios";
 import { useCartStore } from "@/lib/cart-store";
 import { useLocaleStore } from "@/lib/locale-store";
 import { t } from "@/lib/i18n";
@@ -52,12 +57,22 @@ type CartItem = {
 
 const MAX_QTY = 20;
 const CONTACT_STORAGE_KEY = "sandweeji_checkout_info";
+const DESTINATION_STORAGE_KEY = "sandweeji_checkout_destination_id";
 
 type ContactInfo = {
   name: string;
   phone: string;
   address: string;
 };
+
+interface DeliveryDestinationOption {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  deliveryFee: number;
+  isActive: boolean;
+  sortOrder: number;
+}
 
 function loadSavedContact(): Partial<ContactInfo> {
   if (typeof window === "undefined") return {};
@@ -85,6 +100,30 @@ function saveContact(info: ContactInfo) {
     window.localStorage.setItem(CONTACT_STORAGE_KEY, JSON.stringify(info));
   } catch {
     // Storage unavailable (private mode, quota, etc). Non-fatal.
+  }
+}
+
+function loadSavedDestinationId(): string | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    return window.localStorage.getItem(DESTINATION_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function saveDestinationId(id: string | null) {
+  if (typeof window === "undefined") return;
+
+  try {
+    if (id) {
+      window.localStorage.setItem(DESTINATION_STORAGE_KEY, id);
+    } else {
+      window.localStorage.removeItem(DESTINATION_STORAGE_KEY);
+    }
+  } catch {
+    // Storage unavailable. Non-fatal.
   }
 }
 
@@ -533,7 +572,9 @@ function CartItemRow({ item }: { item: CartItem }) {
 ========================================================= */
 
 type Step = "cart" | "checkout";
-type FieldErrors = Partial<Record<"address" | "name" | "phone", string>>;
+type FieldErrors = Partial<
+  Record<"address" | "name" | "phone" | "destination", string>
+>;
 
 export default function CartDrawer() {
   const { items, isOpen, closeCart, clearCart, subtotal } = useCartStore();
@@ -558,9 +599,66 @@ export default function CartDrawer() {
   const [isSending, setIsSending] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
+  const [destinationId, setDestinationId] = useState<string | null>(null);
+  const [isChoosingDestination, setIsChoosingDestination] = useState(false);
+  const [destinationSearch, setDestinationSearch] = useState("");
+
   const clearConfirmTimeout = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+
+  /* ------------------------------------------------------------------------ */
+  /* Delivery destinations                                                    */
+  /* ------------------------------------------------------------------------ */
+
+  const {
+    data: destinationsResponse,
+    isLoading: destinationsLoading,
+    isError: destinationsError,
+  } = useQuery({
+    queryKey: ["delivery-destinations"],
+    queryFn: async () => {
+      const response =
+        await axiosGet<DeliveryDestinationOption[]>("destinations");
+
+      if (!response.data) {
+        throw new Error(response.message || "Failed to fetch delivery areas");
+      }
+
+      return response.data;
+    },
+    enabled: isOpen,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // The API also returns inactive destinations (the admin table needs them);
+  // the storefront should only ever offer active ones.
+  const activeDestinations = useMemo(
+    () => (destinationsResponse ?? []).filter((d) => d.isActive),
+    [destinationsResponse],
+  );
+
+  const filteredDestinations = useMemo(() => {
+    const query = destinationSearch.trim().toLowerCase();
+    if (!query) return activeDestinations;
+
+    return activeDestinations.filter(
+      (destination) =>
+        destination.nameAr.toLowerCase().includes(query) ||
+        destination.nameEn.toLowerCase().includes(query),
+    );
+  }, [activeDestinations, destinationSearch]);
+
+  const selectedDestination = useMemo(
+    () => activeDestinations.find((d) => d.id === destinationId) ?? null,
+    [activeDestinations, destinationId],
+  );
+
+  const deliveryFee = selectedDestination
+    ? Number(selectedDestination.deliveryFee)
+    : 0;
+
+  const grandTotal = total + deliveryFee;
 
   // Track viewport for the mobile bottom-sheet vs. desktop side-drawer split.
   useEffect(() => {
@@ -574,14 +672,37 @@ export default function CartDrawer() {
     return () => mq.removeEventListener("change", update);
   }, []);
 
-  // Prefill contact info from the last successful order.
+  // Prefill contact info + delivery area from the last successful order.
   useEffect(() => {
     const saved = loadSavedContact();
 
     if (saved.name) setName(saved.name);
     if (saved.phone) setPhone(saved.phone);
     if (saved.address) setAddress(saved.address);
+
+    const savedDestinationId = loadSavedDestinationId();
+    if (savedDestinationId) setDestinationId(savedDestinationId);
   }, []);
+
+  // If a previously-saved destination was deactivated or removed, drop it
+  // once the live list comes back instead of silently charging a stale fee.
+  useEffect(() => {
+    if (!destinationId || destinationsLoading) return;
+
+    const stillValid = activeDestinations.some((d) => d.id === destinationId);
+
+    if (!stillValid) {
+      setDestinationId(null);
+    }
+  }, [destinationId, activeDestinations, destinationsLoading]);
+
+  // Open the picker automatically the first time checkout is reached
+  // without a delivery area already chosen.
+  useEffect(() => {
+    if (step === "checkout" && !destinationId) {
+      setIsChoosingDestination(true);
+    }
+  }, [step, destinationId]);
 
   // Always land on the cart step when the drawer opens.
   useEffect(() => {
@@ -642,6 +763,12 @@ export default function CartDrawer() {
   const validate = (): boolean => {
     const errors: FieldErrors = {};
 
+    if (!destinationId) {
+      errors.destination = isRtl
+        ? "يرجى اختيار منطقة التوصيل."
+        : "Please select a delivery area.";
+    }
+
     if (!address.trim()) {
       errors.address = isRtl
         ? "يرجى إدخال عنوان التوصيل."
@@ -692,13 +819,29 @@ export default function CartDrawer() {
     }, 3000);
   };
 
+  const handleSelectDestination = (destination: DeliveryDestinationOption) => {
+    setDestinationId(destination.id);
+    setIsChoosingDestination(false);
+    setDestinationSearch("");
+    clearFieldError("destination");
+    saveDestinationId(destination.id);
+  };
+
+  const handleClearDestination = () => {
+    setDestinationId(null);
+    setIsChoosingDestination(true);
+    setDestinationSearch("");
+    saveDestinationId(null);
+  };
+
   const canSubmit = useMemo(
     () =>
+      Boolean(destinationId) &&
       address.trim().length > 0 &&
       name.trim().length > 0 &&
       phone.trim().length > 0 &&
       items.length > 0,
-    [address, name, phone, items.length],
+    [destinationId, address, name, phone, items.length],
   );
 
   const handleWhatsAppOrder = () => {
@@ -764,13 +907,37 @@ export default function CartDrawer() {
 
     message +=
       locale === "ar"
-        ? `\nالمجموع: ${formatPrice(total)}`
-        : `\nTotal: ${formatPrice(total)}`;
+        ? `\nالمجموع الفرعي: ${formatPrice(total)}`
+        : `\nSubtotal: ${formatPrice(total)}`;
+
+    if (selectedDestination) {
+      const destinationName =
+        locale === "ar"
+          ? selectedDestination.nameAr
+          : selectedDestination.nameEn || selectedDestination.nameAr;
+
+      const feeText =
+        deliveryFee > 0
+          ? formatPrice(deliveryFee)
+          : locale === "ar"
+            ? "مجاني"
+            : "Free";
+
+      message +=
+        locale === "ar"
+          ? `\nمنطقة التوصيل: ${destinationName} (${feeText})`
+          : `\nDelivery area: ${destinationName} (${feeText})`;
+    }
 
     message +=
       locale === "ar"
-        ? `\nعنوان التوصيل: ${cleanAddress}`
-        : `\nDelivery address: ${cleanAddress}`;
+        ? `\nالمجموع الكلي: ${formatPrice(grandTotal)}`
+        : `\nTotal: ${formatPrice(grandTotal)}`;
+
+    message +=
+      locale === "ar"
+        ? `\nتفاصيل العنوان: ${cleanAddress}`
+        : `\nAddress details: ${cleanAddress}`;
 
     message +=
       locale === "ar" ? `\nالاسم: ${cleanName}` : `\nName: ${cleanName}`;
@@ -794,11 +961,20 @@ export default function CartDrawer() {
     const waUrl =
       `https://wa.me/${phoneNumber}` + `?text=${encodeURIComponent(message)}`;
 
+    // Contact + delivery area are kept for next time (repeat-order
+    // convenience); only the cart itself needs to empty.
     saveContact({ name: cleanName, phone: cleanPhone, address: cleanAddress });
 
     // Some mobile browsers block window.open outside a direct tap handler,
     // so fall back to a same-tab navigation if the popup didn't take.
     const opened = window.open(waUrl, "_blank", "noopener,noreferrer");
+
+    // The order has been handed off to WhatsApp — clear the cart right away
+    // so the customer can't accidentally resend or double-order, and close
+    // the drawer so they land back on the menu.
+    clearCart();
+    setOrderNotes("");
+    closeCart();
 
     window.setTimeout(() => {
       setIsSending(false);
@@ -1123,7 +1299,279 @@ export default function CartDrawer() {
                     </span>
                   </button>
 
-                  {/* Address */}
+                  {/* Delivery area */}
+                  <div>
+                    <p className="text-xs font-bold text-white/50 mb-2 px-1">
+                      {isRtl ? "منطقة التوصيل *" : "Delivery area *"}
+                    </p>
+
+                    {selectedDestination && !isChoosingDestination ? (
+                      <div
+                        className="
+                          w-full
+                          flex
+                          items-center
+                          justify-between
+                          gap-2
+                          rounded-xl
+                          bg-primary/10
+                          border
+                          border-primary/30
+                          px-3
+                          py-2.5
+                        "
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setIsChoosingDestination(true)}
+                          className="
+                            flex-1
+                            min-w-0
+                            flex
+                            items-center
+                            gap-2.5
+                            text-left
+                            rtl:text-right
+                          "
+                        >
+                          <span
+                            className="
+                              w-8
+                              h-8
+                              rounded-lg
+                              bg-primary/15
+                              flex
+                              items-center
+                              justify-center
+                              shrink-0
+                            "
+                          >
+                            <MapPin className="w-4 h-4 text-primary" />
+                          </span>
+
+                          <span className="min-w-0">
+                            <span className="block text-sm font-bold text-white truncate">
+                              {isRtl
+                                ? selectedDestination.nameAr
+                                : selectedDestination.nameEn ||
+                                  selectedDestination.nameAr}
+                            </span>
+                            <span className="block text-[11px] text-primary font-semibold">
+                              {deliveryFee > 0
+                                ? `+${formatPrice(deliveryFee)}`
+                                : isRtl
+                                  ? "توصيل مجاني"
+                                  : "Free delivery"}
+                            </span>
+                          </span>
+                        </button>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setIsChoosingDestination(true)}
+                            className="
+                              text-[11px]
+                              font-semibold
+                              text-primary
+                              hover:underline
+                              px-1.5
+                              py-1
+                            "
+                          >
+                            {isRtl ? "تغيير" : "Change"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleClearDestination}
+                            aria-label={
+                              isRtl
+                                ? "إزالة منطقة التوصيل"
+                                : "Remove delivery area"
+                            }
+                            className="
+                              w-7
+                              h-7
+                              rounded-lg
+                              flex
+                              items-center
+                              justify-center
+                              text-white/30
+                              hover:text-red-400
+                              hover:bg-red-400/10
+                              transition-colors
+                            "
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <Search
+                            className={`
+                              absolute
+                              top-1/2
+                              -translate-y-1/2
+                              ${isRtl ? "right-3" : "left-3"}
+                              w-4
+                              h-4
+                              text-white/30
+                              pointer-events-none
+                            `}
+                          />
+
+                          <input
+                            type="text"
+                            value={destinationSearch}
+                            onChange={(event) =>
+                              setDestinationSearch(event.target.value)
+                            }
+                            placeholder={
+                              isRtl
+                                ? "ابحث عن منطقتك..."
+                                : "Search your area..."
+                            }
+                            className={`
+                              w-full
+                              h-11
+                              rounded-xl
+                              bg-[#292929]
+                              border-0
+                              text-white
+                              text-sm
+                              outline-none
+                              placeholder:text-white/25
+                              focus:ring-1
+                              focus:ring-primary/50
+                              transition-all
+                              ${isRtl ? "pr-10 pl-3" : "pl-10 pr-3"}
+                            `}
+                          />
+                        </div>
+
+                        {destinationsLoading ? (
+                          <div className="space-y-2">
+                            {Array.from({ length: 3 }).map((_, index) => (
+                              <div
+                                key={`dest-loading-${index}`}
+                                className="h-12 rounded-xl bg-[#242424] animate-pulse"
+                              />
+                            ))}
+                          </div>
+                        ) : destinationsError ? (
+                          <div className="rounded-xl bg-red-400/10 border border-red-400/20 px-4 py-3 text-xs text-red-400">
+                            {isRtl
+                              ? "تعذر تحميل مناطق التوصيل."
+                              : "Couldn't load delivery areas."}
+                          </div>
+                        ) : filteredDestinations.length === 0 ? (
+                          <div className="rounded-xl bg-[#242424] px-4 py-3 text-xs text-white/40">
+                            {activeDestinations.length === 0
+                              ? isRtl
+                                ? "لا توجد مناطق توصيل متاحة حالياً."
+                                : "No delivery areas available right now."
+                              : isRtl
+                                ? "لا توجد نتائج مطابقة."
+                                : "No matching areas."}
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5 max-h-[200px] overflow-y-auto scrollbar-hide pr-0.5">
+                            {filteredDestinations.map((destination) => {
+                              const isSelected =
+                                destination.id === destinationId;
+
+                              const name = isRtl
+                                ? destination.nameAr
+                                : destination.nameEn || destination.nameAr;
+
+                              const fee = Number(destination.deliveryFee);
+
+                              return (
+                                <button
+                                  key={destination.id}
+                                  type="button"
+                                  onClick={() =>
+                                    handleSelectDestination(destination)
+                                  }
+                                  className={`
+                                    w-full
+                                    flex
+                                    items-center
+                                    justify-between
+                                    gap-3
+                                    rounded-xl
+                                    px-3.5
+                                    py-3
+                                    text-sm
+                                    border
+                                    transition-all
+                                    ${
+                                      isSelected
+                                        ? "bg-primary/10 border-primary text-white"
+                                        : "bg-[#242424] border-transparent text-white/70 hover:bg-[#282828]"
+                                    }
+                                  `}
+                                >
+                                  <span className="flex items-center gap-2.5 min-w-0">
+                                    <span
+                                      className={`
+                                        shrink-0
+                                        w-5
+                                        h-5
+                                        rounded-full
+                                        border-2
+                                        flex
+                                        items-center
+                                        justify-center
+                                        ${
+                                          isSelected
+                                            ? "border-primary bg-primary"
+                                            : "border-white/20"
+                                        }
+                                      `}
+                                    >
+                                      {isSelected && (
+                                        <Check className="w-3 h-3 text-primary-foreground" />
+                                      )}
+                                    </span>
+
+                                    <span className="font-semibold truncate">
+                                      {name}
+                                    </span>
+                                  </span>
+
+                                  <span
+                                    className={`text-xs font-bold shrink-0 ${
+                                      isSelected
+                                        ? "text-primary"
+                                        : "text-white/40"
+                                    }`}
+                                  >
+                                    {fee > 0
+                                      ? `+${formatPrice(fee)}`
+                                      : isRtl
+                                        ? "مجاني"
+                                        : "Free"}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {fieldErrors.destination && (
+                      <p className="text-xs font-semibold text-red-400 mt-1.5 px-1">
+                        {fieldErrors.destination}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Address details */}
                   <div>
                     <div className="relative">
                       <MapPin
@@ -1147,7 +1595,9 @@ export default function CartDrawer() {
                           clearFieldError("address");
                         }}
                         placeholder={
-                          isRtl ? "عنوان التوصيل *" : "Delivery address *"
+                          isRtl
+                            ? "تفاصيل العنوان (شارع، مبنى، طابق) *"
+                            : "Address details (street, building, floor) *"
                         }
                         required
                         className={`
@@ -1361,13 +1811,30 @@ export default function CartDrawer() {
                     </span>
                   </div>
 
+                  {selectedDestination && (
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-sm text-white/40 flex items-center gap-1.5">
+                        <Truck className="w-3.5 h-3.5" />
+                        {isRtl ? "رسم التوصيل" : "Delivery fee"}
+                      </span>
+
+                      <span className="text-sm font-semibold text-white/70">
+                        {deliveryFee > 0
+                          ? formatPrice(deliveryFee)
+                          : isRtl
+                            ? "مجاني"
+                            : "Free"}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between mt-1">
                     <span className="text-base font-extrabold text-white">
                       {t("total", locale)}
                     </span>
 
                     <span className="text-xl font-extrabold text-primary">
-                      {formatPrice(total)}
+                      {formatPrice(grandTotal)}
                     </span>
                   </div>
                 </div>
@@ -1466,7 +1933,11 @@ export default function CartDrawer() {
                       {isSending ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                       ) : (
-                        <MessageCircle className="w-5 h-5" />
+                        <Image
+                          src={whatsapp}
+                          alt="WhatsApp"
+                          className="w-6 h-6"
+                        />
                       )}
 
                       {t("sendOrder", locale)}

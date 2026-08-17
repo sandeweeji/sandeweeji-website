@@ -78,3 +78,14 @@ export interface Review {
   textAr: string;
   date: string;
 }
+
+export interface DeliveryDestination {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  deliveryFee: string | number;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}

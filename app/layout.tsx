@@ -79,14 +79,17 @@ export default function RootLayout({
     <html
       lang="ar"
       dir="rtl"
-      className={`${plusJakarta.variable} ${cairo.variable}  bg-background dark`}
+      className={`${plusJakarta.variable} ${cairo.variable} bg-background dark`}
     >
       <body className="antialiased font-sans bg-background text-foreground">
-        <LocaleHtmlWrapper />
-        <Navbar />
-        <QueryProvider>{children}</QueryProvider>
-        <Footer />
-        <CartDrawer />
+        <QueryProvider>
+          <LocaleHtmlWrapper />
+          <Navbar />
+          {children}
+          <Footer />
+          <CartDrawer />
+        </QueryProvider>
+
         {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>

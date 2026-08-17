@@ -18,10 +18,13 @@ import {
   Download,
   Loader2,
   LogOut,
+  MapPin,
+  Check,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   axiosDelete,
@@ -56,13 +59,35 @@ interface CategoriesResponse {
   categories?: Category[];
 }
 
-type Tab = "products" | "categories";
+interface DeliveryDestination {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  deliveryFee: string | number;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface DeliveryDestinationFormPayload {
+  id?: string;
+  nameAr: string;
+  nameEn: string;
+  deliveryFee: number;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+type Tab = "products" | "categories" | "delivery";
 
 /* -------------------------------------------------------------------------- */
 /* Component                                                                  */
 /* -------------------------------------------------------------------------- */
 
 export default function AdminPage() {
+  const queryClient = useQueryClient();
+
   const [activeTab, setActiveTab] = useState<Tab>("products");
 
   const [productSearch, setProductSearch] = useState("");
@@ -86,6 +111,24 @@ export default function AdminPage() {
 
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+
+  const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false);
+  const [selectedDeliveryDestination, setSelectedDeliveryDestination] =
+    useState<DeliveryDestination | null>(null);
+  const [
+    deliveryDestinationPendingDelete,
+    setDeliveryDestinationPendingDelete,
+  ] = useState<DeliveryDestination | null>(null);
+  const [deliveryForm, setDeliveryForm] = useState({
+    nameAr: "",
+    nameEn: "",
+    deliveryFee: "",
+    isActive: true,
+    sortOrder: "0",
+  });
+  const [deliveryFormError, setDeliveryFormError] = useState<string | null>(
+    null,
+  );
 
   /* ------------------------------------------------------------------------ */
   /* Products query                                                           */
@@ -134,6 +177,32 @@ export default function AdminPage() {
   });
 
   /* ------------------------------------------------------------------------ */
+  /* Delivery destinations query                                              */
+  /* ------------------------------------------------------------------------ */
+
+  const {
+    data: deliveryDestinationsResponse,
+    isLoading: deliveryDestinationsLoading,
+    isError: deliveryDestinationsError,
+    refetch: refetchDeliveryDestinations,
+  } = useQuery({
+    queryKey: ["delivery-destinations"],
+    queryFn: async () => {
+      const response = await axiosGet<DeliveryDestination[]>("destinations");
+
+      if (!response.data) {
+        throw new Error(
+          response.message || "Failed to fetch delivery destinations",
+        );
+      }
+
+      return response.data;
+    },
+  });
+
+  console.log("destinations", deliveryDestinationsResponse);
+
+  /* ------------------------------------------------------------------------ */
   /* Normalize API data                                                       */
   /* ------------------------------------------------------------------------ */
 
@@ -145,8 +214,11 @@ export default function AdminPage() {
     ? categoriesResponse
     : (categoriesResponse?.categories ?? []);
 
+  const deliveryDestinations: DeliveryDestination[] =
+    deliveryDestinationsResponse ?? [];
+
   const isLoading = productsLoading || categoriesLoading;
-  const isError = productsError || categoriesError;
+  const isError = productsError || categoriesError || deliveryDestinationsError;
 
   /* ------------------------------------------------------------------------ */
   /* Stats                                                                    */
@@ -185,6 +257,11 @@ export default function AdminPage() {
     [categories],
   );
 
+  const sortedDeliveryDestinations = useMemo(
+    () => [...deliveryDestinations].sort((a, b) => a.sortOrder - b.sortOrder),
+    [deliveryDestinations],
+  );
+
   /* ------------------------------------------------------------------------ */
   /* Product modal handlers                                                   */
   /* ------------------------------------------------------------------------ */
@@ -221,6 +298,42 @@ export default function AdminPage() {
   const handleCloseCategoryModal = () => {
     setIsCategoryModalOpen(false);
     setSelectedCategory(null);
+  };
+
+  /* ------------------------------------------------------------------------ */
+  /* Delivery destination modal handlers                                      */
+  /* ------------------------------------------------------------------------ */
+
+  const handleAddDeliveryDestination = () => {
+    setSelectedDeliveryDestination(null);
+    setDeliveryFormError(null);
+    setDeliveryForm({
+      nameAr: "",
+      nameEn: "",
+      deliveryFee: "",
+      isActive: true,
+      sortOrder: String(deliveryDestinations.length),
+    });
+    setIsDeliveryModalOpen(true);
+  };
+
+  const handleEditDeliveryDestination = (destination: DeliveryDestination) => {
+    setSelectedDeliveryDestination(destination);
+    setDeliveryFormError(null);
+    setDeliveryForm({
+      nameAr: destination.nameAr,
+      nameEn: destination.nameEn,
+      deliveryFee: String(destination.deliveryFee),
+      isActive: destination.isActive,
+      sortOrder: String(destination.sortOrder),
+    });
+    setIsDeliveryModalOpen(true);
+  };
+
+  const handleCloseDeliveryModal = () => {
+    setIsDeliveryModalOpen(false);
+    setSelectedDeliveryDestination(null);
+    setDeliveryFormError(null);
   };
 
   /* ------------------------------------------------------------------------ */
@@ -337,6 +450,113 @@ export default function AdminPage() {
     deleteCategoryMutation.mutate(categoryPendingDelete.id);
   };
 
+  /* ------------------------------------------------------------------------ */
+  /* Delivery destination mutations                                           */
+  /* ------------------------------------------------------------------------ */
+
+  const saveDeliveryDestinationMutation = useMutation({
+    mutationFn: async (payload: DeliveryDestinationFormPayload) => {
+      if (!payload.id) {
+        return axiosPost<DeliveryDestinationFormPayload, DeliveryDestination>(
+          "destinations",
+          payload,
+        );
+      }
+      // No PUT route exists for destinations, only PATCH — it accepts a
+      // partial body, and sending all fields on edit is still valid.
+      return axiosPatch<DeliveryDestinationFormPayload, DeliveryDestination>(
+        `destinations/${payload.id}`,
+        payload,
+      );
+    },
+    onSuccess: async () => {
+      await refetchDeliveryDestinations();
+      handleCloseDeliveryModal();
+    },
+    onError: (error: Error) => {
+      setDeliveryFormError(error.message);
+    },
+  });
+
+  const toggleDeliveryDestinationMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      return axiosPatch<{ isActive: boolean }, DeliveryDestination>(
+        `destinations/${id}`,
+        { isActive },
+      );
+    },
+    onSuccess: async () => {
+      await refetchDeliveryDestinations();
+    },
+  });
+
+  const deleteDeliveryDestinationMutation = useMutation({
+    mutationFn: async (destinationId: string) => {
+      return axiosDelete<DeliveryDestination>(`destinations/${destinationId}`);
+    },
+    onSuccess: async () => {
+      await refetchDeliveryDestinations();
+      setDeliveryDestinationPendingDelete(null);
+      setDeleteErrorMessage(null);
+    },
+    onError: (error: Error) => {
+      setDeleteErrorMessage(error.message);
+    },
+  });
+
+  const handleToggleDeliveryDestination = (
+    destination: DeliveryDestination,
+  ) => {
+    if (isDeliveryActionPending) return;
+
+    toggleDeliveryDestinationMutation.mutate({
+      id: destination.id,
+      isActive: !destination.isActive,
+    });
+  };
+
+  const handleDeleteDeliveryDestination = (
+    destination: DeliveryDestination,
+  ) => {
+    setDeleteErrorMessage(null);
+    setDeliveryDestinationPendingDelete(destination);
+  };
+
+  const handleConfirmDeleteDeliveryDestination = () => {
+    if (!deliveryDestinationPendingDelete) return;
+    deleteDeliveryDestinationMutation.mutate(
+      deliveryDestinationPendingDelete.id,
+    );
+  };
+
+  const handleSaveDeliveryDestination = () => {
+    const trimmedNameAr = deliveryForm.nameAr.trim();
+    const trimmedNameEn = deliveryForm.nameEn.trim();
+    const parsedFee = Number(deliveryForm.deliveryFee);
+    const parsedSortOrder = Number(deliveryForm.sortOrder);
+
+    if (!trimmedNameAr) {
+      setDeliveryFormError("يرجى إدخال اسم المنطقة .");
+      return;
+    }
+
+    if (Number.isNaN(parsedFee) || parsedFee < 0) {
+      setDeliveryFormError("يرجى إدخال رسم توصيل صالح.");
+      return;
+    }
+
+    setDeliveryFormError(null);
+
+    saveDeliveryDestinationMutation.mutate({
+      id: selectedDeliveryDestination?.id,
+      nameAr: trimmedNameAr,
+      nameEn: trimmedNameEn,
+      deliveryFee: parsedFee,
+      isActive: deliveryForm.isActive,
+      sortOrder: Number.isNaN(parsedSortOrder) ? 0 : parsedSortOrder,
+    });
+  };
+
   const handleExportExcel = async () => {
     setIsExporting(true);
     setExportError(null);
@@ -373,6 +593,13 @@ export default function AdminPage() {
     deleteProductMutation.isPending ||
     saveCategoryMutation.isPending ||
     deleteCategoryMutation.isPending;
+
+  const isSavingDeliveryDestination = saveDeliveryDestinationMutation.isPending;
+
+  const isDeliveryActionPending =
+    isSavingDeliveryDestination ||
+    toggleDeliveryDestinationMutation.isPending ||
+    deleteDeliveryDestinationMutation.isPending;
 
   /* ------------------------------------------------------------------------ */
   /* Render                                                                   */
@@ -457,6 +684,12 @@ export default function AdminPage() {
             icon={<Tag className="w-4 h-4" />}
             label="التصنيفات"
           />
+          <TabButton
+            active={activeTab === "delivery"}
+            onClick={() => setActiveTab("delivery")}
+            icon={<MapPin className="w-4 h-4" />}
+            label="التوصيل"
+          />
         </div>
 
         {isError && (
@@ -469,6 +702,7 @@ export default function AdminPage() {
               onClick={() => {
                 refetchProducts();
                 refetchCategories();
+                refetchDeliveryDestinations();
               }}
               className="mt-2 text-sm font-semibold text-destructive underline"
             >
@@ -488,7 +722,7 @@ export default function AdminPage() {
             >
               {/* Search + Filter + Add */}
               <div className="flex flex-wrap gap-3">
-                <div className="relative flex-1 min-w-[200px]">
+                <div className="relative flex-1 min-w-50">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                   <input
                     type="search"
@@ -590,7 +824,7 @@ export default function AdminPage() {
                           return (
                             <tr
                               key={product.id}
-                              className="hover:bg-white/[0.02] transition-colors group"
+                              className="hover:bg-white/2 transition-colors group"
                             >
                               <td className="px-5 py-3.5">
                                 <div className="flex items-center gap-3">
@@ -704,7 +938,7 @@ export default function AdminPage() {
                 </div>
               </div>
             </motion.div>
-          ) : (
+          ) : activeTab === "categories" ? (
             <motion.div
               key="categories"
               initial={{ opacity: 0, y: 8 }}
@@ -791,6 +1025,206 @@ export default function AdminPage() {
                   )}
               </div>
             </motion.div>
+          ) : (
+            <motion.div
+              key="delivery"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="space-y-5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-extrabold text-foreground">
+                    مناطق التوصيل
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    إدارة مناطق التوصيل ورسوم كل منطقة.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddDeliveryDestination}
+                  disabled={isDeliveryActionPending}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus className="w-4 h-4" />
+                  إضافة منطقة
+                </button>
+              </div>
+
+              {deliveryDestinationsLoading ? (
+                <div className="bg-card border border-white/10 rounded-2xl overflow-hidden">
+                  <div className="p-5 space-y-3">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                      <div
+                        key={`delivery-loading-${index}`}
+                        className="h-16 bg-white/5 rounded-xl animate-pulse"
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : deliveryDestinationsError ? (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3">
+                  <p className="text-sm text-destructive">
+                    حدث خطأ أثناء تحميل مناطق التوصيل.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => refetchDeliveryDestinations()}
+                    className="mt-2 text-sm font-semibold text-destructive underline"
+                  >
+                    إعادة المحاولة
+                  </button>
+                </div>
+              ) : sortedDeliveryDestinations.length === 0 ? (
+                <div className="bg-card border border-white/10 rounded-2xl px-6 py-14 text-center">
+                  <div className="mx-auto w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4">
+                    <MapPin className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-base font-bold text-foreground">
+                    لا توجد مناطق توصيل بعد
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+                    أضف المناطق التي يصل إليها المطعم وحدد رسم التوصيل لكل
+                    منطقة.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleAddDeliveryDestination}
+                    className="mt-5 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    إضافة أول منطقة
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-card border border-white/10 rounded-2xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-180">
+                      <thead>
+                        <tr className="border-b border-white/10">
+                          <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
+                            المنطقة
+                          </th>
+                          <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
+                            رسم التوصيل
+                          </th>
+                          <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
+                            الحالة
+                          </th>
+                          <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
+                            الترتيب
+                          </th>
+                          <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
+                            الإجراءات
+                          </th>
+                        </tr>
+                      </thead>
+
+                      <tbody className="divide-y divide-white/5">
+                        {sortedDeliveryDestinations.map((destination) => (
+                          <tr
+                            key={destination.id}
+                            className="hover:bg-white/2 transition-colors group"
+                          >
+                            <td className="px-5 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/10 flex items-center justify-center shrink-0">
+                                  <MapPin className="w-4 h-4 text-primary" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-foreground truncate">
+                                    {destination.nameAr}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {destination.nameEn}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="px-5 py-4">
+                              <span className="text-sm font-bold text-primary">
+                                {formatPrice(Number(destination.deliveryFee))}
+                              </span>
+                            </td>
+
+                            <td className="px-5 py-4">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleToggleDeliveryDestination(destination)
+                                }
+                                disabled={isDeliveryActionPending}
+                                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors disabled:opacity-50 ${
+                                  destination.isActive
+                                    ? "bg-emerald-400/10 text-emerald-400 hover:bg-emerald-400/20"
+                                    : "bg-white/5 text-muted-foreground hover:bg-white/10"
+                                }`}
+                              >
+                                {destination.isActive ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5" />
+                                    فعال
+                                  </>
+                                ) : (
+                                  <>
+                                    <X className="w-3.5 h-3.5" />
+                                    متوقف
+                                  </>
+                                )}
+                              </button>
+                            </td>
+
+                            <td className="px-5 py-4">
+                              <span className="text-sm text-muted-foreground">
+                                {destination.sortOrder}
+                              </span>
+                            </td>
+
+                            <td className="px-5 py-4">
+                              <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleEditDeliveryDestination(destination)
+                                  }
+                                  disabled={isDeliveryActionPending}
+                                  className="w-8 h-8 rounded-lg hover:bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                                  aria-label="تعديل"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDeleteDeliveryDestination(destination)
+                                  }
+                                  disabled={isDeliveryActionPending}
+                                  className="w-8 h-8 rounded-lg hover:bg-destructive/10 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                                  aria-label="حذف"
+                                >
+                                  {deleteDeliveryDestinationMutation.isPending &&
+                                  deliveryDestinationPendingDelete?.id ===
+                                    destination.id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
@@ -811,6 +1245,205 @@ export default function AdminPage() {
         category={selectedCategory}
         onSave={handleSaveCategory}
       />
+
+      {/* Delivery destination form modal */}
+      <AnimatePresence>
+        {isDeliveryModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                handleCloseDeliveryModal();
+              }
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
+              className="w-full max-w-lg bg-card border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
+                <div>
+                  <h2 className="text-lg font-extrabold text-foreground">
+                    {selectedDeliveryDestination
+                      ? "تعديل منطقة التوصيل"
+                      : "إضافة منطقة توصيل"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    حدد اسم المنطقة ورسم التوصيل.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleCloseDeliveryModal}
+                  disabled={isSavingDeliveryDestination}
+                  className="w-9 h-9 rounded-xl hover:bg-white/10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                  aria-label="إغلاق"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5">
+                {deliveryFormError && (
+                  <div className="rounded-xl bg-destructive/10 border border-destructive/30 px-4 py-3 text-sm text-destructive">
+                    {deliveryFormError}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-2">
+                    الاسم بالعربية
+                  </label>
+                  <input
+                    type="text"
+                    dir="rtl"
+                    value={deliveryForm.nameAr}
+                    onChange={(event) =>
+                      setDeliveryForm((current) => ({
+                        ...current,
+                        nameAr: event.target.value,
+                      }))
+                    }
+                    placeholder="مثلاً: الحمرا"
+                    className="w-full h-11 bg-background border border-white/10 rounded-xl px-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                </div>
+
+                {/* <div>
+                  <label className="block text-sm font-semibold text-foreground mb-2">
+                    الاسم بالإنجليزية
+                  </label>
+                  <input
+                    type="text"
+                    value={deliveryForm.nameEn}
+                    onChange={(event) =>
+                      setDeliveryForm((current) => ({
+                        ...current,
+                        nameEn: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. Hamra"
+                    className="w-full h-11 bg-background border border-white/10 rounded-xl px-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                </div> */}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-foreground mb-2">
+                      رسم التوصيل
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        L.L
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.25"
+                        value={deliveryForm.deliveryFee}
+                        onChange={(event) =>
+                          setDeliveryForm((current) => ({
+                            ...current,
+                            deliveryFee: event.target.value,
+                          }))
+                        }
+                        placeholder="100000"
+                        className="w-full h-11 bg-background border border-white/10 rounded-xl pl-8 pr-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
+                      />
+                    </div>
+                  </div>
+                  {/* 
+                  <div>
+                    <label className="block text-sm font-semibold text-foreground mb-2">
+                      ترتيب العرض
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={deliveryForm.sortOrder}
+                      onChange={(event) =>
+                        setDeliveryForm((current) => ({
+                          ...current,
+                          sortOrder: event.target.value,
+                        }))
+                      }
+                      className="w-full h-11 bg-background border border-white/10 rounded-xl px-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                    />
+                  </div> */}
+                </div>
+
+                <div className="flex items-center justify-between rounded-2xl bg-white/3 border border-white/10 px-4 py-3.5">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      متاحة للعملاء
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      المناطق المتوقفة لن تظهر أثناء الطلب.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={deliveryForm.isActive}
+                    onClick={() =>
+                      setDeliveryForm((current) => ({
+                        ...current,
+                        isActive: !current.isActive,
+                      }))
+                    }
+                    className={`relative w-11 h-6 rounded-full transition-colors ${
+                      deliveryForm.isActive ? "bg-emerald-500" : "bg-white/10"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${
+                        deliveryForm.isActive ? "left-6" : "left-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-3 px-6 py-5 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={handleCloseDeliveryModal}
+                  disabled={isSavingDeliveryDestination}
+                  className="flex-1 h-11 rounded-xl bg-white/5 text-foreground text-sm font-semibold hover:bg-white/10 transition-colors disabled:opacity-50"
+                >
+                  إلغاء
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveDeliveryDestination}
+                  disabled={isSavingDeliveryDestination}
+                  className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSavingDeliveryDestination ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      جارٍ الحفظ...
+                    </>
+                  ) : selectedDeliveryDestination ? (
+                    "حفظ التعديلات"
+                  ) : (
+                    "إضافة المنطقة"
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Delete product confirm */}
       <ConfirmDialog
@@ -850,6 +1483,25 @@ export default function AdminPage() {
         onConfirm={handleConfirmDeleteCategory}
         onCancel={() => {
           setCategoryPendingDelete(null);
+          setDeleteErrorMessage(null);
+        }}
+      />
+
+      {/* Delete delivery destination confirm */}
+      <ConfirmDialog
+        isOpen={Boolean(deliveryDestinationPendingDelete)}
+        title="حذف منطقة التوصيل"
+        description={
+          deliveryDestinationPendingDelete
+            ? `هل أنت متأكد من حذف "${deliveryDestinationPendingDelete.nameAr}"؟ لا يمكن التراجع عن هذا الإجراء.`
+            : ""
+        }
+        confirmLabel="حذف"
+        isLoading={deleteDeliveryDestinationMutation.isPending}
+        errorMessage={deleteErrorMessage}
+        onConfirm={handleConfirmDeleteDeliveryDestination}
+        onCancel={() => {
+          setDeliveryDestinationPendingDelete(null);
           setDeleteErrorMessage(null);
         }}
       />

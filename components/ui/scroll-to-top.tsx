@@ -60,7 +60,7 @@ export default function ScrollToTop() {
             justify-center
             rounded-full
             border
-            border-white/10
+            border-amber-600
             bg-black/80
             text-white
             shadow-[0_8px_30px_rgba(0,0,0,0.3)]
