@@ -93,7 +93,7 @@ export default function ProductCard({ product, onOpenModal }: Props) {
           alt={name}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-card/60 via-transparent to-transparent" />
 

@@ -67,6 +67,8 @@ export default function MenuPage() {
         throw new Error(response.message || "Failed to fetch products");
       return response.data;
     },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const {
@@ -84,6 +86,8 @@ export default function MenuPage() {
         throw new Error(response.message || "Failed to fetch categories");
       return response.data;
     },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const products: Product[] = Array.isArray(productsResponse)
