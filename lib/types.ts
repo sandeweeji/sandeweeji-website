@@ -89,3 +89,14 @@ export interface DeliveryDestination {
   createdAt: string;
   updatedAt: string;
 }
+export interface CartItem {
+  id: string;
+  productId: string;
+  nameEn: string;
+  nameAr: string;
+  price: number;
+  image: string;
+  quantity: number;
+  notes?: string;
+  extras: CartExtra[];
+}

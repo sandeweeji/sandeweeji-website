@@ -218,7 +218,7 @@ export default function MenuPage() {
       </div>
 
       {/* Sticky Category Nav */}
-      <div className="sticky top-16 lg:top-20 z-30 bg-background/90 backdrop-blur-md border-b border-white/10">
+      <div className="sticky top-16  z-30 bg-background/90 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             ref={navRef}

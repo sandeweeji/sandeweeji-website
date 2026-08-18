@@ -57,7 +57,7 @@ export const useCartStore = create<CartStore>()(
                     }
                   : i,
               ),
-              isOpen: true,
+              //     isOpen: true,
             };
           }
 
@@ -69,7 +69,7 @@ export const useCartStore = create<CartStore>()(
                 id: entryId,
               },
             ],
-            isOpen: true,
+            //  isOpen: true,
           };
         });
       },
@@ -160,7 +160,7 @@ export const useCartStore = create<CartStore>()(
 
       openCart: () =>
         set({
-          isOpen: true,
+          //   isOpen: true,
         }),
 
       closeCart: () =>
