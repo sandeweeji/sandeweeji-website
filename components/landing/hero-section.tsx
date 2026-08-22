@@ -96,7 +96,7 @@ export default function HeroSection() {
                       سمّينا ساندويجي
                     </span>
                     <span className="block sm:inline-block">
-                      مشان تاكل و ترجع تيجي
+                      لأنك بتاكل و بترجع بتيجي
                     </span>
                   </>
                 ) : (
@@ -121,7 +121,7 @@ export default function HeroSection() {
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  className="w-full sm:w-[190px] h-[52px] sm:h-[56px] inline-flex items-center justify-center gap-2 sm:gap-2.5 px-4 sm:px-7 rounded-lg bg-primary text-primary-foreground font-bold text-sm sm:text-base shadow-lg glow-brand hover:bg-primary/90 transition-all whitespace-nowrap"
+                  className="w-full sm:w-47.5 h-13 sm:h-14 inline-flex items-center justify-center gap-2 sm:gap-2.5 px-4 sm:px-7 rounded-lg bg-primary text-primary-foreground font-bold text-sm sm:text-base shadow-lg glow-brand hover:bg-primary/90 transition-all whitespace-nowrap"
                 >
                   {t("viewMenu", locale)}
                   <Utensils className="w-4 h-4 shrink-0" />
@@ -134,7 +134,7 @@ export default function HeroSection() {
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="w-full sm:w-[190px] h-[52px] sm:h-[56px] inline-flex items-center justify-center gap-2 sm:gap-2.5 px-4 sm:px-7 rounded-lg bg-emerald-950 border border-[#25D366]/30 text-[#25D366] font-bold text-sm sm:text-base hover:bg-[#25D366]/20 transition-all whitespace-nowrap"
+                className="w-full sm:w-47.5 h-13 sm:h-14 inline-flex items-center justify-center gap-2 sm:gap-2.5 px-4 sm:px-7 rounded-lg bg-emerald-950 border border-[#25D366]/30 text-[#25D366] font-bold text-sm sm:text-base hover:bg-[#25D366]/20 transition-all whitespace-nowrap"
               >
                 <Image
                   src={whatsapp}
@@ -156,7 +156,7 @@ export default function HeroSection() {
                 duration: 0.6,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="relative w-full max-w-[260px] sm:max-w-[380px] lg:max-w-[520px] aspect-square mx-auto"
+              className="relative w-full max-w-65 sm:max-w-95 lg:max-w-130 aspect-square mx-auto"
             >
               {/* Glow ring */}
               <div className="absolute inset-8 rounded-full bg-primary/10 blur-3xl" />

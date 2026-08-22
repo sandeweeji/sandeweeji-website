@@ -12,6 +12,16 @@ export interface CategoriesResponse {
   categories?: Category[];
 }
 
+export interface DeliverySubDestination {
+  id: string;
+  destinationId: string;
+  nameAr: string;
+  nameEn: string | null;
+  deliveryFee: number;
+  isActive: boolean;
+  sortOrder: number;
+}
+
 export interface DeliveryDestination {
   id: string;
   nameAr: string;
@@ -21,6 +31,7 @@ export interface DeliveryDestination {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  subDestinations: DeliverySubDestination[];
 }
 
 export interface DeliveryDestinationFormPayload {

@@ -7,11 +7,20 @@ export async function GET() {
   try {
     const destinations = await prisma.deliveryDestination.findMany({
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      include: {
+        subDestinations: {
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        },
+      },
     });
 
     const formattedDestinations = destinations.map((destination) => ({
       ...destination,
       deliveryFee: Number(destination.deliveryFee),
+      subDestinations: destination.subDestinations.map((sub) => ({
+        ...sub,
+        deliveryFee: Number(sub.deliveryFee),
+      })),
     }));
 
     return NextResponse.json({
@@ -21,10 +30,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error("GET delivery destinations error:", error);
-
-    if (error instanceof Response) {
-      return error;
-    }
+    if (error instanceof Response) return error;
 
     return NextResponse.json(
       {
@@ -36,6 +42,8 @@ export async function GET() {
     );
   }
 }
+
+// POST stays exactly as you have it — creating a destination doesn't touch subs.
 
 export async function POST(request: NextRequest) {
   try {

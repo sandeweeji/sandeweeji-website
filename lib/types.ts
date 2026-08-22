@@ -88,6 +88,7 @@ export interface DeliveryDestination {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  subDestinations: DeliverySubDestination[];
 }
 export interface CartItem {
   id: string;
@@ -99,4 +100,14 @@ export interface CartItem {
   quantity: number;
   notes?: string;
   extras: CartExtra[];
+}
+
+export interface DeliverySubDestination {
+  id: string;
+  destinationId: string;
+  nameAr: string;
+  nameEn: string | null;
+  deliveryFee: number;
+  isActive: boolean;
+  sortOrder: number;
 }

@@ -12,13 +12,17 @@ interface DeliveryDestinationModalProps {
   isOpen: boolean;
   selectedDeliveryDestination: DeliveryDestination | null;
   deliveryForm: DeliveryFormState;
-  onFormChange: (updater: (current: DeliveryFormState) => DeliveryFormState) => void;
+  onFormChange: (
+    updater: (current: DeliveryFormState) => DeliveryFormState,
+  ) => void;
   deliveryFormError: string | null;
   isSaving: boolean;
   onClose: () => void;
   onSave: () => void;
 }
 
+// Destinations are just named groupings now — no delivery fee lives here.
+// Fees are set per sub-destination via the expandable row in delivery-tab.tsx.
 export function DeliveryDestinationModal({
   isOpen,
   selectedDeliveryDestination,
@@ -57,7 +61,8 @@ export function DeliveryDestinationModal({
                     : "إضافة منطقة توصيل"}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  حدد اسم المنطقة ورسم التوصيل.
+                  حدد اسم المنطقة. المناطق الفرعية ورسوم التوصيل تُدار بعد
+                  الإضافة.
                 </p>
               </div>
 
@@ -79,6 +84,14 @@ export function DeliveryDestinationModal({
                 </div>
               )}
 
+              {!selectedDeliveryDestination && (
+                <div className="rounded-xl bg-primary/10 border border-primary/20 px-4 py-3 text-xs text-foreground/80 leading-relaxed">
+                  بعد إضافة المنطقة، افتحها من الجدول لإضافة منطقة فرعية واحدة
+                  على الأقل مع رسم التوصيل الخاص بها — بدون ذلك لن تظهر هذه
+                  المنطقة كخيار متاح للعملاء.
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">
                   الاسم بالعربية
@@ -96,33 +109,6 @@ export function DeliveryDestinationModal({
                   placeholder="مثلاً: الحمرا"
                   className="w-full h-11 bg-background border border-white/10 rounded-xl px-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">
-                    رسم التوصيل
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                      L.L
-                    </span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.25"
-                      value={deliveryForm.deliveryFee}
-                      onChange={(event) =>
-                        onFormChange((current) => ({
-                          ...current,
-                          deliveryFee: event.target.value,
-                        }))
-                      }
-                      placeholder="100000"
-                      className="w-full h-11 bg-background border border-white/10 rounded-xl pl-8 pr-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
-                    />
-                  </div>
-                </div>
               </div>
 
               <div className="flex items-center justify-between rounded-2xl bg-white/3 border border-white/10 px-4 py-3.5">

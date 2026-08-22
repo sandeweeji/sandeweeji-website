@@ -1,10 +1,21 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Check, Edit2, Loader2, MapPin, Plus, Trash2, X } from "lucide-react";
+import { Fragment, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Check,
+  ChevronDown,
+  Edit2,
+  Loader2,
+  MapPin,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 
 import { formatPrice } from "@/lib/utils";
 import type { DeliveryDestination } from "@/components/admin/types";
+import { SubDestinationManager } from "@/components/admin/sub-destination-manager";
 
 interface DeliveryTabProps {
   deliveryDestinationsLoading: boolean;
@@ -33,6 +44,12 @@ export function DeliveryTab({
   onRequestDelete,
   onRetry,
 }: DeliveryTabProps) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const toggleExpanded = (id: string) => {
+    setExpandedId((current) => (current === id ? null : id));
+  };
+
   return (
     <motion.div
       key="delivery"
@@ -47,7 +64,8 @@ export function DeliveryTab({
             مناطق التوصيل
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            إدارة مناطق التوصيل ورسوم كل منطقة.
+            إدارة مناطق التوصيل ورسوم كل منطقة. اضغط على السهم لإدارة المناطق
+            الفرعية.
           </p>
         </div>
 
@@ -112,6 +130,7 @@ export function DeliveryTab({
             <table className="w-full min-w-180">
               <thead>
                 <tr className="border-b border-white/10">
+                  <th className="w-8" />
                   <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3.5">
                     المنطقة
                   </th>
@@ -131,94 +150,133 @@ export function DeliveryTab({
               </thead>
 
               <tbody className="divide-y divide-white/5">
-                {sortedDeliveryDestinations.map((destination) => (
-                  <tr
-                    key={destination.id}
-                    className="hover:bg-white/2 transition-colors group"
-                  >
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/10 flex items-center justify-center shrink-0">
-                          <MapPin className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-foreground truncate">
-                            {destination.nameAr}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {destination.nameEn}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
+                {sortedDeliveryDestinations.map((destination) => {
+                  const isExpanded = expandedId === destination.id;
 
-                    <td className="px-5 py-4">
-                      <span className="text-sm font-bold text-primary">
-                        {formatPrice(Number(destination.deliveryFee))}
-                      </span>
-                    </td>
-
-                    <td className="px-5 py-4">
-                      <button
-                        type="button"
-                        onClick={() => onToggle(destination)}
-                        disabled={isDeliveryActionPending}
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors disabled:opacity-50 ${
-                          destination.isActive
-                            ? "bg-emerald-400/10 text-emerald-400 hover:bg-emerald-400/20"
-                            : "bg-white/5 text-muted-foreground hover:bg-white/10"
-                        }`}
+                  return (
+                    <Fragment key={destination.id}>
+                      <tr
+                        key={destination.id}
+                        className="hover:bg-white/2 transition-colors group"
                       >
-                        {destination.isActive ? (
-                          <>
-                            <Check className="w-3.5 h-3.5" />
-                            فعال
-                          </>
-                        ) : (
-                          <>
-                            <X className="w-3.5 h-3.5" />
-                            متوقف
-                          </>
-                        )}
-                      </button>
-                    </td>
+                        <td className="px-2 py-4">
+                          <button
+                            type="button"
+                            onClick={() => toggleExpanded(destination.id)}
+                            className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            aria-label="إدارة المناطق الفرعية"
+                          >
+                            <ChevronDown
+                              className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                        </td>
 
-                    <td className="px-5 py-4">
-                      <span className="text-sm text-muted-foreground">
-                        {destination.sortOrder}
-                      </span>
-                    </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/10 flex items-center justify-center shrink-0">
+                              <MapPin className="w-4 h-4 text-primary" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-foreground truncate">
+                                {destination.nameAr}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {destination.nameEn}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
 
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={() => onEdit(destination)}
-                          disabled={isDeliveryActionPending}
-                          className="w-8 h-8 rounded-lg hover:bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                          aria-label="تعديل"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
+                        <td className="px-5 py-4">
+                          <span className="text-sm font-bold text-primary">
+                            {formatPrice(Number(destination.deliveryFee))}
+                          </span>
+                        </td>
 
-                        <button
-                          type="button"
-                          onClick={() => onRequestDelete(destination)}
-                          disabled={isDeliveryActionPending}
-                          className="w-8 h-8 rounded-lg hover:bg-destructive/10 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-                          aria-label="حذف"
-                        >
-                          {isDeletingDestination &&
-                          deliveryDestinationPendingDeleteId === destination.id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-3.5 h-3.5" />
-                          )}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        <td className="px-5 py-4">
+                          <button
+                            type="button"
+                            onClick={() => onToggle(destination)}
+                            disabled={isDeliveryActionPending}
+                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors disabled:opacity-50 ${
+                              destination.isActive
+                                ? "bg-emerald-400/10 text-emerald-400 hover:bg-emerald-400/20"
+                                : "bg-white/5 text-muted-foreground hover:bg-white/10"
+                            }`}
+                          >
+                            {destination.isActive ? (
+                              <>
+                                <Check className="w-3.5 h-3.5" />
+                                فعال
+                              </>
+                            ) : (
+                              <>
+                                <X className="w-3.5 h-3.5" />
+                                متوقف
+                              </>
+                            )}
+                          </button>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <span className="text-sm text-muted-foreground">
+                            {destination.sortOrder}
+                          </span>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => onEdit(destination)}
+                              disabled={isDeliveryActionPending}
+                              className="w-8 h-8 rounded-lg hover:bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                              aria-label="تعديل"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => onRequestDelete(destination)}
+                              disabled={isDeliveryActionPending}
+                              className="w-8 h-8 rounded-lg hover:bg-destructive/10 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                              aria-label="حذف"
+                            >
+                              {isDeletingDestination &&
+                              deliveryDestinationPendingDeleteId ===
+                                destination.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {isExpanded && (
+                        <tr key={`${destination.id}-expanded`}>
+                          <td colSpan={6} className="px-5 pb-5 pt-0 bg-white/2">
+                            <AnimatePresence>
+                              <motion.div
+                                initial={{ opacity: 0, y: -6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                              >
+                                <SubDestinationManager
+                                  destinationId={destination.id}
+                                  destinationName={destination.nameAr}
+                                />
+                              </motion.div>
+                            </AnimatePresence>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>

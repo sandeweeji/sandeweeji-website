@@ -103,8 +103,31 @@ model DeliveryDestination {
   nameEn      String?
   deliveryFee Decimal  @db.Decimal(10, 2)
   isActive    Boolean  @default(true)
-  sortOrder   Int?      @default(0)
+  sortOrder   Int?     @default(0)
+
+  subDestinations DeliverySubDestination[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@map("delivery_destinations")
 }
+
+model DeliverySubDestination {
+  id            String   @id @default(cuid())
+  destinationId String
+  destination   DeliveryDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  nameAr      String
+  nameEn      String?
+  deliveryFee Decimal  @db.Decimal(10, 2)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([destinationId])
+  @@map("delivery_sub_destinations")
+}
+
