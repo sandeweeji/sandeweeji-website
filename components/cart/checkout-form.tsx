@@ -9,7 +9,10 @@ import type { DeliveryDestination, DeliverySubDestination } from "@/lib/types";
 import { DeliveryAreaPicker } from "./delivery-area-picker";
 
 export type FieldErrors = Partial<
-  Record<"address" | "name" | "phone" | "destination", string>
+  Record<
+    "address" | "name" | "phone" | "destination" | "subDestination",
+    string
+  >
 >;
 
 interface CheckoutFormProps {
@@ -102,6 +105,7 @@ export function CheckoutForm({
           onSelectSubDestination={onSelectSubDestination}
           onClear={onClearDestination}
           errorMessage={fieldErrors.destination}
+          subDestinationErrorMessage={fieldErrors.subDestination}
         />
       </div>
 

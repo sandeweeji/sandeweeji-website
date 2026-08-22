@@ -18,12 +18,23 @@ import {
   loadSavedSubDestinationId,
   saveSubDestinationId,
 } from "@/lib/checkout-storage";
-import { getActiveSubDestinations, getEffectiveDeliveryFee, requiresSubDestination } from "@/lib/delivery";
+import {
+  getActiveSubDestinations,
+  getEffectiveDeliveryFee,
+  requiresSubDestination,
+} from "@/lib/delivery";
 import { buildOrderMessage } from "@/lib/build-order-message";
-import type { CartItem, DeliveryDestination, DeliverySubDestination } from "@/lib/types";
+import type {
+  CartItem,
+  DeliveryDestination,
+  DeliverySubDestination,
+} from "@/lib/types";
 
 import { CartList } from "@/components/cart/cart-list";
-import { CheckoutForm, type FieldErrors } from "@/components/cart/checkout-form";
+import {
+  CheckoutForm,
+  type FieldErrors,
+} from "@/components/cart/checkout-form";
 import { CartFooter } from "@/components/cart/cart-footer";
 
 type Step = "cart" | "checkout";
@@ -34,7 +45,10 @@ export default function CartDrawer() {
 
   const isRtl = locale === "ar";
   const total = subtotal();
-  const totalQuantity = items.reduce((sum: number, item: CartItem) => sum + item.quantity, 0);
+  const totalQuantity = items.reduce(
+    (sum: number, item: CartItem) => sum + item.quantity,
+    0,
+  );
 
   const [step, setStep] = useState<Step>("cart");
   const [isMobile, setIsMobile] = useState(false);
@@ -50,7 +64,9 @@ export default function CartDrawer() {
   const [destinationId, setDestinationId] = useState<string | null>(null);
   const [subDestinationId, setSubDestinationId] = useState<string | null>(null);
 
-  const clearConfirmTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearConfirmTimeout = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   /* ------------------------------------------------------------------------ */
   /* Delivery destinations                                                    */
@@ -84,15 +100,21 @@ export default function CartDrawer() {
 
   const selectedSubDestination = useMemo(() => {
     if (!selectedDestination) return null;
-    return getActiveSubDestinations(selectedDestination).find((s) => s.id === subDestinationId) ?? null;
+    return (
+      getActiveSubDestinations(selectedDestination).find(
+        (s) => s.id === subDestinationId,
+      ) ?? null
+    );
   }, [selectedDestination, subDestinationId]);
 
-  const deliveryFee = getEffectiveDeliveryFee(selectedDestination, subDestinationId);
+  const deliveryFee = getEffectiveDeliveryFee(
+    selectedDestination,
+    subDestinationId,
+  );
   const grandTotal = total + deliveryFee;
 
   const hasCompleteDestination = Boolean(
-    selectedDestination &&
-      (!requiresSubDestination(selectedDestination) || Boolean(selectedSubDestination)),
+    selectedDestination && selectedSubDestination,
   );
 
   // Track viewport for the mobile bottom-sheet vs. desktop side-drawer split.
@@ -133,7 +155,9 @@ export default function CartDrawer() {
     }
 
     if (requiresSubDestination(destination) && subDestinationId) {
-      const stillValidSub = getActiveSubDestinations(destination).some((s) => s.id === subDestinationId);
+      const stillValidSub = getActiveSubDestinations(destination).some(
+        (s) => s.id === subDestinationId,
+      );
       if (!stillValidSub) setSubDestinationId(null);
     }
   }, [destinationId, subDestinationId, destinations, destinationsLoading]);
@@ -197,15 +221,19 @@ export default function CartDrawer() {
     const errors: FieldErrors = {};
 
     if (!selectedDestination) {
-      errors.destination = isRtl ? "يرجى اختيار منطقة التوصيل." : "Please select a delivery area.";
-    } else if (requiresSubDestination(selectedDestination) && !selectedSubDestination) {
       errors.destination = isRtl
+        ? "يرجى اختيار منطقة التوصيل."
+        : "Please select a delivery area.";
+    } else if (!selectedSubDestination) {
+      errors.subDestination = isRtl
         ? "يرجى اختيار المنطقة الفرعية."
         : "Please select a specific sub-area.";
     }
 
     if (!address.trim()) {
-      errors.address = isRtl ? "يرجى إدخال عنوان التوصيل." : "Please enter your delivery address.";
+      errors.address = isRtl
+        ? "يرجى إدخال عنوان التوصيل."
+        : "Please enter your delivery address.";
     }
 
     if (!name.trim()) {
@@ -215,18 +243,24 @@ export default function CartDrawer() {
     const digitsOnly = phone.replace(/\D/g, "");
 
     if (!phone.trim()) {
-      errors.phone = isRtl ? "يرجى إدخال رقم الهاتف." : "Please enter your phone number.";
+      errors.phone = isRtl
+        ? "يرجى إدخال رقم الهاتف."
+        : "Please enter your phone number.";
     } else if (digitsOnly.length < 7) {
-      errors.phone = isRtl ? "رقم الهاتف يبدو غير مكتمل." : "That phone number looks incomplete.";
+      errors.phone = isRtl
+        ? "رقم الهاتف يبدو غير مكتمل."
+        : "That phone number looks incomplete.";
     }
 
     setFieldErrors(errors);
+
     return Object.keys(errors).length === 0;
   };
 
   const handleClearClick = () => {
     if (showClearConfirm) {
-      if (clearConfirmTimeout.current) clearTimeout(clearConfirmTimeout.current);
+      if (clearConfirmTimeout.current)
+        clearTimeout(clearConfirmTimeout.current);
       clearCart();
       setShowClearConfirm(false);
       setStep("cart");
@@ -234,26 +268,29 @@ export default function CartDrawer() {
     }
 
     setShowClearConfirm(true);
-    clearConfirmTimeout.current = setTimeout(() => setShowClearConfirm(false), 3000);
+    clearConfirmTimeout.current = setTimeout(
+      () => setShowClearConfirm(false),
+      3000,
+    );
   };
 
   const handleSelectDestination = (destination: DeliveryDestination) => {
     setDestinationId(destination.id);
     saveDestinationId(destination.id);
 
-    // Switching destination invalidates any previously-chosen sub-area.
     if (destination.id !== destinationId) {
       setSubDestinationId(null);
       saveSubDestinationId(null);
     }
 
     clearFieldError("destination");
+    clearFieldError("subDestination");
   };
 
   const handleSelectSubDestination = (sub: DeliverySubDestination) => {
     setSubDestinationId(sub.id);
     saveSubDestinationId(sub.id);
-    clearFieldError("destination");
+    clearFieldError("subDestination");
   };
 
   const handleClearDestination = () => {
@@ -371,7 +408,11 @@ export default function CartDrawer() {
                       className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 text-primary hover:bg-primary/15 active:scale-90 transition-all"
                       aria-label={isRtl ? "الرجوع للسلة" : "Back to cart"}
                     >
-                      {isRtl ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
+                      {isRtl ? (
+                        <ArrowRight className="w-5 h-5" />
+                      ) : (
+                        <ArrowLeft className="w-5 h-5" />
+                      )}
                     </button>
                   ) : (
                     <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -381,7 +422,11 @@ export default function CartDrawer() {
 
                   <div className="min-w-0">
                     <h2 className="text-lg font-extrabold text-white truncate">
-                      {step === "checkout" ? (isRtl ? "معلومات التوصيل" : "Delivery details") : t("yourCart", locale)}
+                      {step === "checkout"
+                        ? isRtl
+                          ? "معلومات التوصيل"
+                          : "Delivery details"
+                        : t("yourCart", locale)}
                     </h2>
 
                     <p className="text-xs text-white/35 mt-0.5">
@@ -408,10 +453,18 @@ export default function CartDrawer() {
             {/* Content */}
             <div
               className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-5 scrollbar-hide"
-              style={{ WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}
+              style={{
+                WebkitOverflowScrolling: "touch",
+                overscrollBehavior: "contain",
+              }}
             >
               {step === "cart" ? (
-                <CartList items={items} locale={locale} isRtl={isRtl} onBrowseMenu={closeCart} />
+                <CartList
+                  items={items}
+                  locale={locale}
+                  isRtl={isRtl}
+                  onBrowseMenu={closeCart}
+                />
               ) : (
                 <CheckoutForm
                   isRtl={isRtl}

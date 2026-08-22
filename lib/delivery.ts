@@ -9,18 +9,18 @@ export function getActiveSubDestinations(
 export function requiresSubDestination(
   destination: DeliveryDestination | null,
 ): boolean {
-  return getActiveSubDestinations(destination).length > 0;
+  return destination !== null;
 }
 
 export function getEffectiveDeliveryFee(
   destination: DeliveryDestination | null,
   subDestinationId: string | null,
 ): number {
-  if (!destination) return 0;
+  if (!destination || !subDestinationId) return 0;
 
   const activeSubs = getActiveSubDestinations(destination);
-  if (activeSubs.length === 0) return destination.deliveryFee;
 
   const sub = activeSubs.find((s) => s.id === subDestinationId);
-  return sub ? sub.deliveryFee : 0;
+
+  return sub?.deliveryFee ?? 0;
 }
