@@ -24,6 +24,7 @@ import type {
   DeliveryFormState,
   ProductsResponse,
 } from "@/components/admin/types";
+import { groupProductsByVariant } from "@/lib/group-variants";
 
 /**
  * All server data, local UI state and mutations for the admin panel live
@@ -137,7 +138,7 @@ export function useAdminPanel() {
   const filteredProducts = useMemo(() => {
     const search = productSearch.trim().toLowerCase();
 
-    return products.filter((product) => {
+    const filtered = products.filter((product) => {
       const matchesSearch =
         !search || product.nameAr.toLowerCase().includes(search);
 
@@ -146,6 +147,8 @@ export function useAdminPanel() {
 
       return matchesSearch && matchesCategory;
     });
+
+    return groupProductsByVariant(filtered);
   }, [products, productSearch, categoryFilter]);
 
   const sortedCategories = useMemo(
