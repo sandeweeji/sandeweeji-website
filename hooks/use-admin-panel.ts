@@ -248,6 +248,26 @@ export function useAdminPanel() {
     },
   });
 
+  /* Bulk reorder — drag-and-drop reordering from the products table.
+     sortOrder is derived from array position, so the whole ordered
+     list of visible product ids is sent, not per-item deltas. */
+  const reorderProductsMutation = useMutation({
+    mutationFn: async (items: { id: string; sortOrder: number }[]) => {
+      return axiosPatch<{ items: { id: string; sortOrder: number }[] }, null>(
+        "products/reorder",
+        { items },
+      );
+    },
+    onSuccess: async () => {
+      await refetchProducts();
+    },
+    onError: async () => {
+      // Drag state is only held locally in ProductsTab, so on failure the
+      // safest recovery is just re-pulling the last known-good server order.
+      await refetchProducts();
+    },
+  });
+
   const handleSaveProduct = async (payload: ProductFormPayload) => {
     await saveProductMutation.mutateAsync(payload);
   };
@@ -264,6 +284,17 @@ export function useAdminPanel() {
       id: product.id,
       available: !product.available,
     });
+  };
+
+  const handleReorderProducts = (orderedProductIds: string[]) => {
+    if (reorderProductsMutation.isPending) return;
+
+    const items = orderedProductIds.map((id, index) => ({
+      id,
+      sortOrder: index,
+    }));
+
+    reorderProductsMutation.mutate(items);
   };
 
   /* ---------------------------------------------------------------------- */
@@ -580,6 +611,8 @@ export function useAdminPanel() {
     isExporting,
     exportError,
     handleExportExcel,
+    isReordering: reorderProductsMutation.isPending,
+    handleReorderProducts,
 
     // categories
     categories,

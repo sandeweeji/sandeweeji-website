@@ -1,7 +1,16 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ChefHat, Eye, EyeOff, LayoutGrid, LogOut, MapPin, Package, Tag } from "lucide-react";
+import {
+  ChefHat,
+  Eye,
+  EyeOff,
+  LayoutGrid,
+  LogOut,
+  MapPin,
+  Package,
+  Tag,
+} from "lucide-react";
 
 import ProductFormModal from "@/components/admin/product-form-modal";
 import CategoryFormModal from "@/components/admin/category-form-modal";
@@ -24,7 +33,10 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8 border-b border-border/40 pb-6">
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
             <div className="flex items-center gap-3 mb-1">
               <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center">
                 <ChefHat className="w-4 h-4 text-primary" />
@@ -33,10 +45,15 @@ export default function AdminPage() {
                 Admin Panel
               </span>
             </div>
-            <h1 className="text-3xl font-extrabold text-foreground">إدارة القائمة</h1>
+            <h1 className="text-3xl font-extrabold text-foreground">
+              إدارة القائمة
+            </h1>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
             <form action="/admin/logout" method="POST">
               <button
                 type="submit"
@@ -99,7 +116,9 @@ export default function AdminPage() {
 
         {admin.isError && (
           <div className="bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3 mb-5">
-            <p className="text-sm text-destructive">حدث خطأ أثناء تحميل البيانات.</p>
+            <p className="text-sm text-destructive">
+              حدث خطأ أثناء تحميل البيانات.
+            </p>
             <button
               type="button"
               onClick={admin.refetchAll}
@@ -128,7 +147,10 @@ export default function AdminPage() {
               exportError={admin.exportError}
               onExport={admin.handleExportExcel}
               isSaving={admin.isSaving}
-              isTogglingAvailability={admin.toggleAvailabilityMutation.isPending}
+              isTogglingAvailability={
+                admin.toggleAvailabilityMutation.isPending
+              }
+              isReordering={admin.isReordering}
               onAddProduct={admin.handleAddProduct}
               onEditProduct={admin.handleEditProduct}
               onRequestDelete={(product) => {
@@ -136,6 +158,7 @@ export default function AdminPage() {
                 admin.setProductPendingDelete(product);
               }}
               onToggleAvailability={admin.toggleAvailability}
+              onReorderProducts={admin.handleReorderProducts}
             />
           ) : admin.activeTab === "categories" ? (
             <CategoriesTab
@@ -155,13 +178,17 @@ export default function AdminPage() {
             <DeliveryTab
               key="delivery-tab"
               deliveryDestinationsLoading={admin.deliveryDestinationsLoading}
-              deliveryDestinationsError={Boolean(admin.deliveryDestinationsError)}
+              deliveryDestinationsError={Boolean(
+                admin.deliveryDestinationsError,
+              )}
               sortedDeliveryDestinations={admin.sortedDeliveryDestinations}
               isDeliveryActionPending={admin.isDeliveryActionPending}
               deliveryDestinationPendingDeleteId={
                 admin.deliveryDestinationPendingDelete?.id ?? null
               }
-              isDeletingDestination={admin.deleteDeliveryDestinationMutation.isPending}
+              isDeletingDestination={
+                admin.deleteDeliveryDestinationMutation.isPending
+              }
               onAdd={admin.handleAddDeliveryDestination}
               onEdit={admin.handleEditDeliveryDestination}
               onToggle={admin.handleToggleDeliveryDestination}

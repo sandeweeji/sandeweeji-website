@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useLocaleStore } from "@/lib/locale-store";
 import { axiosGet } from "@/lib/axios";
 import { useQuery } from "@tanstack/react-query";
 import type { Product } from "@/lib/types";
-
 import ProductCard from "@/components/menu/product-card";
 import ProductModal from "@/components/menu/product-modal";
 
@@ -16,21 +15,40 @@ interface ProductsResponse {
   products?: Product[];
 }
 
+/* ============================================================
+   PRODUCT SKELETON
+   ============================================================ */
+
 function ProductSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl bg-card shadow-xl">
+    <div
+      className="
+        overflow-hidden
+        rounded-2xl
+        bg-card
+        shadow-xl
+        border
+        border-white/5
+      "
+      aria-hidden="true"
+    >
+      {/* Image */}
       <div className="h-44 bg-surface animate-pulse" />
 
+      {/* Content */}
       <div className="space-y-4 p-4">
-        <div className="h-4 w-2/3 rounded bg-surface animate-pulse" />
+        {/* Product name */}
+        <div className="h-5 w-2/3 rounded-md bg-surface animate-pulse" />
 
+        {/* Description */}
         <div className="space-y-2">
           <div className="h-3 w-full rounded bg-surface animate-pulse" />
           <div className="h-3 w-4/5 rounded bg-surface animate-pulse" />
         </div>
 
-        <div className="flex items-center justify-between gap-3">
-          <div className="h-6 w-20 rounded bg-surface animate-pulse" />
+        {/* Price + button */}
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <div className="h-6 w-20 rounded-md bg-surface animate-pulse" />
           <div className="h-9 w-28 rounded-xl bg-surface animate-pulse" />
         </div>
       </div>
@@ -38,16 +56,23 @@ function ProductSkeleton() {
   );
 }
 
+/* ============================================================
+   FEATURED SECTION
+   ============================================================ */
+
 export default function FeaturedSection() {
   const { locale } = useLocaleStore();
-
   const isRtl = locale === "ar";
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
+  /* ============================================================
+     QUERY
+     ============================================================ */
+
   const {
     data: productsResponse,
-    isLoading,
+    isPending,
     isError,
     refetch,
   } = useQuery({
@@ -64,6 +89,10 @@ export default function FeaturedSection() {
     },
   });
 
+  /* ============================================================
+     PRODUCTS
+     ============================================================ */
+
   const products: Product[] = Array.isArray(productsResponse)
     ? productsResponse
     : (productsResponse?.products ?? []);
@@ -71,6 +100,10 @@ export default function FeaturedSection() {
   const featured = products.filter((product) =>
     product.badges.includes("featured"),
   );
+
+  /* ============================================================
+     RENDER
+     ============================================================ */
 
   return (
     <>
@@ -86,7 +119,6 @@ export default function FeaturedSection() {
             mx-auto
             max-w-7xl
             px-4
-            
             sm:px-6
             sm:py-20
             lg:px-8
@@ -110,6 +142,7 @@ export default function FeaturedSection() {
             "
           >
             {/* Heading */}
+
             <motion.div
               initial={{
                 opacity: 0,
@@ -128,25 +161,6 @@ export default function FeaturedSection() {
                 ease: [0.16, 1, 0.3, 1],
               }}
             >
-              {/* <div
-                className="
-                  mb-3
-                  flex
-                  items-center
-                  gap-2
-                  text-xs
-                  font-bold
-                  uppercase
-                  tracking-[0.16em]
-                  text-primary
-                  sm:text-sm
-                "
-              >
-                <Sparkles className="h-4 w-4" />
-
-                {isRtl ? "اختياراتنا المميزة" : "Our Selection"}
-              </div> */}
-
               <h2
                 className="
                   text-3xl
@@ -178,6 +192,7 @@ export default function FeaturedSection() {
             </motion.div>
 
             {/* View Full Menu */}
+
             <motion.div
               initial={{
                 opacity: 0,
@@ -320,10 +335,10 @@ export default function FeaturedSection() {
           )}
 
           {/* =====================================================
-              LOADING
+              LOADING SKELETON
           ===================================================== */}
 
-          {isLoading && !isError && (
+          {isPending && !isError && (
             <div
               className="
                 grid
@@ -341,10 +356,10 @@ export default function FeaturedSection() {
           )}
 
           {/* =====================================================
-              EMPTY
+              EMPTY STATE
           ===================================================== */}
 
-          {!isLoading && !isError && featured.length === 0 && (
+          {!isPending && !isError && featured.length === 0 && (
             <motion.div
               initial={{
                 opacity: 0,
@@ -353,27 +368,27 @@ export default function FeaturedSection() {
                 opacity: 1,
               }}
               className="
-                  flex
-                  flex-col
-                  items-center
-                  justify-center
-                  rounded-3xl
-                  bg-white/[0.03]
-                  px-5
-                  py-16
-                  text-center
-                  sm:py-20
-                "
+                flex
+                flex-col
+                items-center
+                justify-center
+                rounded-3xl
+                bg-white/[0.03]
+                px-5
+                py-16
+                text-center
+                sm:py-20
+              "
             >
               <span className="mb-4 text-5xl">🍽️</span>
 
               <h3
                 className="
-                    text-lg
-                    font-bold
-                    text-white
-                    sm:text-xl
-                  "
+                  text-lg
+                  font-bold
+                  text-white
+                  sm:text-xl
+                "
               >
                 {isRtl
                   ? "لا توجد أصناف مميزة حالياً"
@@ -382,12 +397,12 @@ export default function FeaturedSection() {
 
               <p
                 className="
-                    mt-2
-                    max-w-md
-                    text-sm
-                    leading-relaxed
-                    text-white/45
-                  "
+                  mt-2
+                  max-w-md
+                  text-sm
+                  leading-relaxed
+                  text-white/45
+                "
               >
                 {isRtl
                   ? "يمكنك تصفح القائمة الكاملة لرؤية جميع الأصناف."
@@ -397,29 +412,29 @@ export default function FeaturedSection() {
               <Link
                 href="/menu"
                 className="
-                    mt-6
-                    inline-flex
-                    items-center
-                    gap-2
-                    rounded-xl
-                    bg-primary
-                    px-5
-                    py-3
-                    text-sm
-                    font-bold
-                    text-primary-foreground
-                    transition-colors
-                    hover:bg-primary/90
-                  "
+                  mt-6
+                  inline-flex
+                  items-center
+                  gap-2
+                  rounded-xl
+                  bg-primary
+                  px-5
+                  py-3
+                  text-sm
+                  font-bold
+                  text-primary-foreground
+                  transition-colors
+                  hover:bg-primary/90
+                "
               >
                 {isRtl ? "عرض القائمة" : "View Menu"}
 
                 <ArrowRight
                   className={`
-                      h-4
-                      w-4
-                      ${isRtl ? "rotate-180" : ""}
-                    `}
+                    h-4
+                    w-4
+                    ${isRtl ? "rotate-180" : ""}
+                  `}
                 />
               </Link>
             </motion.div>
@@ -429,16 +444,16 @@ export default function FeaturedSection() {
               FEATURED PRODUCTS
           ===================================================== */}
 
-          {!isLoading && !isError && featured.length > 0 && (
+          {!isPending && !isError && featured.length > 0 && (
             <div
               className="
-                  grid
-                  grid-cols-1
-                  gap-5
-                  sm:grid-cols-2
-                  lg:grid-cols-3
-                  lg:gap-6
-                "
+                grid
+                grid-cols-1
+                gap-5
+                sm:grid-cols-2
+                lg:grid-cols-3
+                lg:gap-6
+              "
             >
               {featured.map((product, index) => (
                 <motion.div
@@ -471,6 +486,10 @@ export default function FeaturedSection() {
           )}
         </div>
       </section>
+
+      {/* ==========================================================
+          PRODUCT MODAL
+      ========================================================== */}
 
       <ProductModal
         product={selectedProduct}

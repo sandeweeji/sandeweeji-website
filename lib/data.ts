@@ -96,7 +96,7 @@ export const REVIEWS: Review[] = [
     textEn:
       "Yesterday the crispy meal was amazing, but I did not like the mozzarella sticks much. God give you wellness, you are now number one in Abu Samra!",
     textAr:
-      "مبارح طبلت الكرسبي بتجنن كتير بس الموزاريلا ستيك ما كتير حبيت ما فيها جبنة.. والله يعطيكن العافية وانتا هلق number one بأبو سمراء.",
+      "مبارح طلبت الكرسبي بتجنن كتير بس الموزاريلا ستيك ما كتير حبيت ما فيها جبنة.. والله يعطيكن العافية وانتا هلق number one بأبو سمراء.",
     date: "2026-08-15",
   },
   {
