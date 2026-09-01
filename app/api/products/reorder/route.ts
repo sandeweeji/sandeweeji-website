@@ -1,70 +1,113 @@
-// app/api/products/reorder/route.ts
 import { NextResponse } from "next/server";
+
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth/require-admin";
+
+import type { IResponse } from "@/interfaces/interfaces";
 
 interface ReorderItem {
   id: string;
   sortOrder: number;
 }
 
-/* -------------------------------------------------------------------------- */
-/* PATCH - Bulk update sortOrder for a set of products                        */
-/* -------------------------------------------------------------------------- */
-
 export async function PATCH(request: Request) {
-  const auth = await requireAdmin();
-
-  if (!auth.authorized) {
-    return NextResponse.json(
-      { message: "Unauthorized" },
-      { status: auth.status },
-    );
-  }
-
   try {
     const body = await request.json();
+
     const items = body?.items as ReorderItem[] | undefined;
 
     if (!Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { status: 400, message: "لا توجد عناصر لإعادة الترتيب." },
-        { status: 400 },
-      );
+      const response: IResponse = {
+        message: "بيانات إعادة الترتيب غير صالحة.",
+        status: 400,
+      };
+
+      return NextResponse.json(response, {
+        status: 400,
+      });
     }
 
+    /*
+     * Validate every item.
+     */
     for (const item of items) {
       if (
-        !item?.id ||
+        typeof item.id !== "string" ||
+        !item.id ||
         typeof item.sortOrder !== "number" ||
-        Number.isNaN(item.sortOrder)
+        !Number.isInteger(item.sortOrder) ||
+        item.sortOrder < 0
       ) {
-        return NextResponse.json(
-          { status: 400, message: "بيانات إعادة الترتيب غير صالحة." },
-          { status: 400 },
-        );
+        const response: IResponse = {
+          message: "بيانات إعادة الترتيب غير صالحة.",
+          status: 400,
+        };
+
+        return NextResponse.json(response, {
+          status: 400,
+        });
       }
     }
 
+    /*
+     * Make sure there are no duplicate product IDs.
+     */
+    const uniqueIds = new Set(items.map((item) => item.id));
+
+    if (uniqueIds.size !== items.length) {
+      const response: IResponse = {
+        message: "لا يمكن تكرار المنتجات.",
+        status: 400,
+      };
+
+      return NextResponse.json(response, {
+        status: 400,
+      });
+    }
+
+    /*
+     * Update all products inside one transaction.
+     *
+     * maxWait:
+     * Maximum time Prisma waits to acquire a DB connection.
+     *
+     * timeout:
+     * Maximum time allowed for the transaction.
+     */
     await prisma.$transaction(
       items.map((item) =>
         prisma.product.update({
-          where: { id: item.id },
-          data: { sortOrder: item.sortOrder },
+          where: {
+            id: item.id,
+          },
+          data: {
+            sortOrder: item.sortOrder,
+          },
         }),
       ),
+      {
+        maxWait: 10000,
+        timeout: 20000,
+      },
     );
 
-    return NextResponse.json({
+    const response: IResponse<undefined> = {
+      message: "تم حفظ ترتيب المنتجات بنجاح.",
       status: 200,
-      message: "تم تحديث ترتيب المنتجات بنجاح.",
+    };
+
+    return NextResponse.json(response, {
+      status: 200,
     });
   } catch (error) {
     console.error("PATCH /api/products/reorder error:", error);
 
-    return NextResponse.json(
-      { status: 500, message: "حدث خطأ أثناء إعادة ترتيب المنتجات." },
-      { status: 500 },
-    );
+    const response: IResponse = {
+      message: "حدث خطأ أثناء حفظ ترتيب المنتجات.",
+      status: 500,
+    };
+
+    return NextResponse.json(response, {
+      status: 500,
+    });
   }
 }
